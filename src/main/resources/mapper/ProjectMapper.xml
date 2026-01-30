@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gxcj.mapper.ProjectMapper">
+    <resultMap id="projectWithDetailMap" type="com.gxcj.entity.ProjectEntity">
+        <result column="school_name" property="schoolName" />
+        <result column="leader_name" property="leaderName" />
+    </resultMap>
+
+    <select id="selectProjectDetail" resultMap="projectWithDetailMap" >
+        select p.*, s.name as school_name, u.nickName as leader_name
+        from biz_project p
+        left join sys_school s on p.school_id = s.id
+        left join sys_user u on p.user_id = u.id
+        where p.project_id = #{projectId}
+    </select>
+
+</mapper>

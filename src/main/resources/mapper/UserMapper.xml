@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gxcj.mapper.UserMapper">
+
+    <!-- 扩展的 resultMap，包含角色名 -->
+    <resultMap id="userWithRoleMap" type="com.gxcj.entity.UserEntity">
+        <id column="id" property="id" jdbcType="VARCHAR"/>
+        <result column="system_code" property="loginName" jdbcType="VARCHAR"/>
+        <result column="password" property="password" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="role_key" property="role" jdbcType="VARCHAR"/>
+        <result column="nickname" property="showName" jdbcType="VARCHAR"/>
+        <result column="avatar" property="profilePicture" jdbcType="VARCHAR"/>
+        <!-- 新增：映射角色名 -->
+        <result column="role_name" property="roleName" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <!-- 登录查询：返回用户 + 角色名 -->
+    <select id="selectByLoginName" resultMap="userWithRoleMap">
+        SELECT
+            u.id,
+            u.system_code,
+            u.password,
+            u.create_time,
+            u.role_key,
+            u.nickname,
+            u.avatar,
+            r.role_name
+        FROM sys_user u
+                 LEFT JOIN sys_role r ON u.role_key = r.id
+        WHERE u.system_code = #{loginName}
+          AND u.is_deleted = 0
+          AND u.status = 1
+    </select>
+
+</mapper>

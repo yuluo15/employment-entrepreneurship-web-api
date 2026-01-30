@@ -1,0 +1,64 @@
+server:
+  port: 9595
+spring:
+  profiles:
+    active: dev
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: 123456
+    url: jdbc:postgresql://localhost:5432/gxcj
+  data:
+    jdbc:
+      dialect: postgresql
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+      connect-timeout: 5000
+      timeout: 10000
+      lettuce:
+        pool:
+          max-active: 8       # 连接池最大连接数
+          max-idle: 8         # 最大空闲连接
+          min-idle: 0         # 最小空闲连接
+          max-wait: -1        # 获取连接最大等待时间（-1 表示不限）
+        shutdown-timeout: 100ms  # Lettuce 客户端关闭时的超时（可选）
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    serialization:
+      indent-output: true
+      fail-on-empty-beans: false
+  mail:
+    host: smtp.163.com
+    username: 15937321163@163.com
+    password: HUSJ******
+    default-encoding: UTF-8
+  ai:
+    openai:
+      api-key: sk-XQG******
+      base-url: https://api.xty.app
+      chat:
+        options:
+          model: gpt-3.5-turbo
+# 文件存储配置
+storage:
+  # 阿里云 OSS 配置
+  alioss:
+    endpoint: https://oss-cn-hangzhou.aliyuncs.com
+    accessKeyId: LTAI******
+    accessKeySecret: BlUf******
+    bucketName: webtest-01
+  # MinIO 配置
+  minio:
+    endpoint: http://localhost:9000
+    accessKey: minioadmin
+    secretKey: minioadmin
+    bucketName: gxcj-files
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+logging:
+  level:
+    com.gxcj.mapper: debug

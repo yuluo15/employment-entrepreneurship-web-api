@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gxcj.mapper.SchoolMapper">
+
+    <resultMap id="schoolMap" type="com.gxcj.entity.SchoolEntity">
+        <id column="id" property="id" jdbcType="VARCHAR"/>
+        <result column="name" property="name" jdbcType="VARCHAR" />
+        <result column="code" property="code" jdbcType="VARCHAR" />
+        <result column="contact_phone" property="contactPhone" jdbcType="VARCHAR" />
+        <result column="address" property="address" jdbcType="VARCHAR" />
+        <result column="status" property="status" jdbcType="INTEGER" />
+        <result column="logo" property="logo" jdbcType="VARCHAR" />
+        <result column="create_by" property="createBy" jdbcType="VARCHAR" />
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="is_deleted" property="isDeleted" jdbcType="INTEGER" />
+
+        <result column="login_identity" property="email" jdbcType="INTEGER" />
+    </resultMap>
+
+    <select id="list" resultMap="schoolMap">
+        select
+            s.id,
+            s.name,
+            s.code,
+            s.contact_phone,
+            s.address,
+            s.status,
+            s.logo,
+            s.create_by,
+            s.create_time,
+            s.update_time,
+            s.is_deleted,
+            u.login_identity
+        from sys_school s
+        left join sys_user u on s.default_account_id = u.id
+        <where>
+            <if test="name != '' and name != null">
+                s.name like CONCAT('%', #{name}, '%') and
+            </if>
+            <if test="status != '' and status != null">
+                s.status = #{status} and
+            </if>
+        s.is_deleted = 0
+        </where>
+    </select>
+
+    <select id="deleteList" resultMap="schoolMap" >
+        select
+        s.id,
+        s.name,
+        s.code,
+        s.contact_phone,
+        s.address,
+        s.status,
+        s.logo,
+        s.create_by,
+        s.create_time,
+        s.update_time,
+        s.is_deleted
+        from sys_school s
+        where s.is_deleted = 1
+    </select>
+</mapper>
