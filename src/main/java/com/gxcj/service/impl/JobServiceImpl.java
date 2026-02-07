@@ -3,6 +3,7 @@ package com.gxcj.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.gxcj.context.UserContext;
 import com.gxcj.controller.student.JobController;
 import com.gxcj.entity.*;
 import com.gxcj.entity.vo.job.JobDetailVo;
@@ -37,6 +38,12 @@ public class JobServiceImpl implements JobService {
     private UserMapper userMapper;
     @Autowired
     private DictDataMapper dictDataMapper;
+    @Autowired
+    private CollectionMapper collectionMapper;
+    @Autowired
+    private JobDeliveryMapper jobDeliveryMapper;
+    @Autowired
+    private StudentMapper studentMapper;
 
     @Override
     public PageResult<SearchResultVo> search(JobController.SearchReq req) {
@@ -199,6 +206,22 @@ public class JobServiceImpl implements JobService {
         jobDetailVo.setHrAvatar(hrEntity.getAvatar());
         jobDetailVo.setHrTitle(hrEntity.getPosition());
 
+        //是否收藏
+        CollectionEntity collectionEntity = collectionMapper.selectOne(new LambdaQueryWrapper<CollectionEntity>()
+                .eq(CollectionEntity::getUserId, UserContext.getUserId())
+                .eq(CollectionEntity::getTargetId, jobEntity.getId()));
+        if (collectionEntity != null) {
+            jobDetailVo.setIsCollected(true);
+        }
+        //是否投递
+        StudentEntity studentEntity = studentMapper.selectOne(new LambdaQueryWrapper<StudentEntity>()
+                .eq(StudentEntity::getUserId, UserContext.getUserId()));
+        JobDeliveryEntity jobDeliveryEntity = jobDeliveryMapper.selectOne(new LambdaQueryWrapper<JobDeliveryEntity>()
+                .eq(JobDeliveryEntity::getStudentId, studentEntity.getStudentId())
+                .eq(JobDeliveryEntity::getJobId, jobEntity.getId()));
+        if (jobDeliveryEntity != null) {
+            jobDetailVo.setIsApplied(true);
+        }
         return jobDetailVo;
     }
 }

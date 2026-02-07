@@ -1,15 +1,10 @@
 package com.gxcj.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.gxcj.entity.DictDataEntity;
-import com.gxcj.entity.ProjectEntity;
-import com.gxcj.entity.SchoolEntity;
-import com.gxcj.entity.UserEntity;
+import com.gxcj.context.UserContext;
+import com.gxcj.entity.*;
 import com.gxcj.entity.vo.job.ProjectDetailVo;
-import com.gxcj.mapper.DictDataMapper;
-import com.gxcj.mapper.ProjectMapper;
-import com.gxcj.mapper.SchoolMapper;
-import com.gxcj.mapper.UserMapper;
+import com.gxcj.mapper.*;
 import com.gxcj.service.ProjectService;
 import com.gxcj.stutas.DictTypeEnum;
 import org.springframework.beans.BeanUtils;
@@ -32,6 +27,8 @@ public class ProjectServiceImpl implements ProjectService {
     private SchoolMapper schoolMapper;
     @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private CollectionMapper collectionMapper;
 
     @Override
     public ProjectDetailVo getProjectDetail(String projectId) {
@@ -57,10 +54,12 @@ public class ProjectServiceImpl implements ProjectService {
         UserEntity userEntity = userMapper.selectById(projectEntity.getUserId());
         projectDetailVo.setLeaderName(userEntity.getNickname());
 
-//        long startTime = System.nanoTime();
-//        List<ProjectEntity> projectEntities = projectMapper.selectProjectDetail(projectId);
-//        long endTime = System.nanoTime();
-//        System.out.println("end-time = " + (endTime - startTime)/1000000);
+        CollectionEntity collectionEntity = collectionMapper.selectOne(new LambdaQueryWrapper<CollectionEntity>()
+                .eq(CollectionEntity::getUserId, UserContext.getUserId())
+                .eq(CollectionEntity::getTargetId, projectId));
+        if (collectionEntity != null) {
+            projectDetailVo.setIsCollected(true);
+        }
         return projectDetailVo;
     }
 }

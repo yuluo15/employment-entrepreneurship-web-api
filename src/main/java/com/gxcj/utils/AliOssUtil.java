@@ -2,6 +2,7 @@ package com.gxcj.utils;
 
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
+import com.gxcj.exception.BusinessException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -65,7 +66,7 @@ public class AliOssUtil implements InitializingBean {
 
         } catch (Exception e) {
             e.printStackTrace();
-            throw new RuntimeException("阿里云OSS上传失败");
+            throw new BusinessException("阿里云OSS上传失败");
         }
     }
 }

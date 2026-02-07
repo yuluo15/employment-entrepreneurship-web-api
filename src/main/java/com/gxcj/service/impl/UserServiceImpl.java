@@ -5,6 +5,7 @@ import com.gxcj.constant.SysConstant;
 import com.gxcj.controller.AuthController;
 import com.gxcj.entity.dto.LoginUser;
 import com.gxcj.entity.vo.UserVo;
+import com.gxcj.exception.BusinessException;
 import com.gxcj.service.UserService;
 import com.gxcj.utils.EntityHelper;
 import com.gxcj.utils.JwtUtil;
@@ -39,7 +40,7 @@ public class UserServiceImpl implements UserService {
 
         // If code reaches here, login is successful. If failed, it throws an exception automatically.
         if (authenticate == null) {
-            throw new RuntimeException("登录失败");
+            throw new BusinessException("登录失败");
         }
 
         // 2. 认证通过，拿到完整的用户信息 (我们在 UserDetailsServiceImpl 里返回的那个 LoginUser)

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.gxcj.entity.RoleEntity;
 import com.gxcj.entity.UserEntity;
 import com.gxcj.entity.dto.LoginUser;
+import com.gxcj.exception.BusinessException;
 import com.gxcj.mapper.RoleMapper;
 import com.gxcj.mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +37,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         }
 
         if (userEntity.getStatus() != 1) {
-            throw new RuntimeException("账号已被冻结或正在审核中");
+            throw new BusinessException("账号已被冻结或正在审核中");
         }
 
         String roleKey = userEntity.getRoleKey();

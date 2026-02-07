@@ -20,4 +20,5 @@ public class ProjectDetailVo {
 
     private String description;      // 项目简介
     private String needs;          // 需求描述
+    private Boolean isCollected;   // 是否收藏
 }
