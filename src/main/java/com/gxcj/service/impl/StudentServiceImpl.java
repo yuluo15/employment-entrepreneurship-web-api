@@ -4,9 +4,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.gxcj.context.UserContext;
+import com.gxcj.controller.student.profile.StudentProfileController;
 import com.gxcj.entity.*;
 import com.gxcj.entity.query.StudentQuery;
 import com.gxcj.entity.vo.DictDataVo;
+import com.gxcj.entity.vo.job.MyProfileVo;
 import com.gxcj.entity.vo.job.StudentProfileVo;
 import com.gxcj.exception.BusinessException;
 import com.gxcj.mapper.*;
@@ -117,5 +119,89 @@ public class StudentServiceImpl implements StudentService {
         vo.setProjectCount(projCount.intValue());
 
         return vo;
+    }
+
+    @Override
+    public MyProfileVo getStudentProfile(String userId) {
+        // 查询用户信息
+        UserEntity userEntity = userMapper.selectById(userId);
+        if (userEntity == null) {
+            throw new BusinessException("用户不存在");
+        }
+        
+        // 查询学生信息
+        StudentEntity studentEntity = studentMapper.selectOne(new LambdaQueryWrapper<StudentEntity>()
+                .eq(StudentEntity::getUserId, userId));
+        if (studentEntity == null) {
+            throw new BusinessException("学生档案不存在");
+        }
+        
+        // 查询学校信息
+        SchoolEntity schoolEntity = null;
+        if (studentEntity.getSchoolId() != null) {
+            schoolEntity = schoolMapper.selectById(studentEntity.getSchoolId());
+        }
+        
+        // 组装VO
+        MyProfileVo vo = new MyProfileVo();
+        vo.setId(studentEntity.getStudentId());
+        vo.setUsername(studentEntity.getStudentNo());
+        vo.setRealName(studentEntity.getStudentName());
+        vo.setSchoolName(schoolEntity != null ? schoolEntity.getName() : "未知学校");
+        vo.setMajor(studentEntity.getMajorName());
+        vo.setAvatar(userEntity.getAvatar());
+        vo.setGender(studentEntity.getGender());
+        vo.setPhone(studentEntity.getPhone());
+        vo.setEmail(studentEntity.getEmail());
+        vo.setGraduationYear(studentEntity.getGraduationYear() != null ? studentEntity.getGraduationYear().toString() : null);
+        vo.setEducation(studentEntity.getEducation());
+        
+        return vo;
+    }
+
+    @Override
+    public void updateStudentProfile(String userId, StudentProfileController.ProfileUpdateReq req) {
+        // 查询用户信息
+        UserEntity userEntity = userMapper.selectById(userId);
+        if (userEntity == null) {
+            throw new BusinessException("用户不存在");
+        }
+        
+        // 查询学生信息
+        StudentEntity studentEntity = studentMapper.selectOne(new LambdaQueryWrapper<StudentEntity>()
+                .eq(StudentEntity::getUserId, userId));
+        if (studentEntity == null) {
+            throw new BusinessException("学生档案不存在");
+        }
+        
+        // 更新用户表的头像和性别
+        if (req.getAvatar() != null) {
+            userEntity.setAvatar(req.getAvatar());
+        }
+        if (req.getGender() != null) {
+            userEntity.setGender(req.getGender());
+        }
+        userEntity.setUpdateTime(com.gxcj.utils.EntityHelper.now());
+        userMapper.updateById(userEntity);
+        
+        // 更新学生表的信息
+        if (req.getPhone() != null) {
+            studentEntity.setPhone(req.getPhone());
+        }
+        if (req.getEmail() != null) {
+            studentEntity.setEmail(req.getEmail());
+        }
+        if (req.getGraduationYear() != null) {
+            try {
+                studentEntity.setGraduationYear(Integer.parseInt(req.getGraduationYear()));
+            } catch (NumberFormatException e) {
+                throw new BusinessException("毕业年份格式不正确");
+            }
+        }
+        if (req.getGender() != null) {
+            studentEntity.setGender(req.getGender());
+        }
+        studentEntity.setUpdateTime(com.gxcj.utils.EntityHelper.now());
+        studentMapper.updateById(studentEntity);
     }
 }

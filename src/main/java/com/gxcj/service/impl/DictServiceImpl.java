@@ -12,11 +12,15 @@ import com.gxcj.mapper.DictTypeMapper;
 import com.gxcj.result.PageResult;
 import com.gxcj.service.DictService;
 import com.gxcj.stutas.DeleteStatusEnum;
+import com.gxcj.stutas.DictTypeEnum;
 import com.gxcj.utils.EntityHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 @Service
 public class DictServiceImpl implements DictService {
@@ -81,5 +85,12 @@ public class DictServiceImpl implements DictService {
         dictDataMapper.update(new LambdaUpdateWrapper<DictDataEntity>()
                 .set(DictDataEntity::getIsDeleted, DeleteStatusEnum.DELETE.getCode())
                 .eq(DictDataEntity::getId, id));
+    }
+
+    public Map<String, String> getDomain() {
+        List<DictDataEntity> list = dictDataMapper.selectList(new LambdaQueryWrapper<DictDataEntity>()
+                .eq(DictDataEntity::getDictType, DictTypeEnum.sys_project_domain.name()));
+        Map<String, String> map = list.stream().collect(Collectors.toMap(DictDataEntity::getDictValue, DictDataEntity::getDictLabel, (x, y) -> x));
+        return map;
     }
 }

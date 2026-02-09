@@ -1,8 +1,10 @@
 package com.gxcj.service;
 
+import com.gxcj.controller.student.profile.StudentProfileController;
 import com.gxcj.entity.StudentEntity;
 import com.gxcj.entity.query.StudentQuery;
 import com.gxcj.entity.vo.DictDataVo;
+import com.gxcj.entity.vo.job.MyProfileVo;
 import com.gxcj.entity.vo.job.StudentProfileVo;
 import com.gxcj.result.PageResult;
 import jakarta.validation.Valid;
@@ -15,4 +17,8 @@ public interface StudentService {
     List<DictDataVo> getDictDataByDictType(String dictType);
 
     StudentProfileVo getProfileSummary();
+
+    MyProfileVo getStudentProfile(String userId);
+
+    void updateStudentProfile(String userId, StudentProfileController.ProfileUpdateReq req);
 }

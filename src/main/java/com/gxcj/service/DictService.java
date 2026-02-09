@@ -5,6 +5,9 @@ import com.gxcj.entity.DictDataEntity;
 import com.gxcj.entity.DictTypeEntity;
 import com.gxcj.result.PageResult;
 
+import java.util.List;
+import java.util.Map;
+
 public interface DictService {
     PageResult<DictTypeEntity> listType(Integer pageNum, Integer pageSize, String dictName);
 
@@ -21,4 +24,6 @@ public interface DictService {
     void updateData(DictController.CreDataReq req);
 
     void deleteData(String id);
+
+    Map<String, String> getDomain();
 }

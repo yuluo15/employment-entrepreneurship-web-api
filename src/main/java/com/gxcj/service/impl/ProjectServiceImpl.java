@@ -1,10 +1,14 @@
 package com.gxcj.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.gxcj.context.UserContext;
+import com.gxcj.controller.student.MobileProjectController;
 import com.gxcj.entity.*;
+import com.gxcj.entity.vo.job.MyProjectVo;
 import com.gxcj.entity.vo.job.ProjectDetailVo;
 import com.gxcj.mapper.*;
+import com.gxcj.result.PageResult;
 import com.gxcj.service.ProjectService;
 import com.gxcj.stutas.DictTypeEnum;
 import org.springframework.beans.BeanUtils;
@@ -61,5 +65,108 @@ public class ProjectServiceImpl implements ProjectService {
             projectDetailVo.setIsCollected(true);
         }
         return projectDetailVo;
+    }
+
+    @Override
+    public PageResult<MyProjectVo> getMyProjectList(Integer pageNum, Integer pageSize) {
+
+        List<DictDataEntity> dataEntityList = dictDataMapper.selectList(new LambdaQueryWrapper<DictDataEntity>()
+                .in(DictDataEntity::getDictType, DictTypeEnum.sys_project_status.name(), DictTypeEnum.sys_project_domain.name()));
+        Map<String, String> map = dataEntityList.stream().collect(Collectors.toMap(DictDataEntity::getDictValue, DictDataEntity::getDictLabel, (x, y) -> x));
+
+        Page<ProjectEntity> page = projectMapper.selectPage(
+                new Page<>(pageNum, pageSize),
+                new LambdaQueryWrapper<ProjectEntity>()
+                        .eq(ProjectEntity::getUserId, UserContext.getUserId()) // 关键：只查我的
+                        .orderByDesc(ProjectEntity::getCreateTime)
+        );
+
+        List<MyProjectVo> list = page.getRecords().stream().map(p -> {
+            MyProjectVo vo = new MyProjectVo();
+            BeanUtils.copyProperties(p, vo);
+            vo.setId(p.getProjectId());
+            vo.setName(p.getProjectName());
+            vo.setDomain(String.join(",", Arrays.stream(p.getDomain().split(","))
+                    .filter(map::containsKey)
+                    .map(map::get).toList()));
+            // 状态翻译
+            vo.setStatusText(map.get(p.getStatus()));
+
+            // 如果是被驳回状态，填充驳回原因
+            if (p.getStatus().equals("2")) {
+                vo.setAuditReason(p.getAuditReason());
+            }
+            return vo;
+        }).collect(Collectors.toList());
+        return new PageResult<>(page.getTotal(), list);
+    }
+
+    @Override
+    public void save(MobileProjectController.ProjectForm projectForm) {
+        if (projectForm.getId() == null || projectForm.getId().isEmpty()) {
+            // 新增项目
+            ProjectEntity projectEntity = new ProjectEntity();
+            projectEntity.setProjectId(com.gxcj.utils.EntityHelper.uuid());
+            projectEntity.setUserId(UserContext.getUserId());
+            projectEntity.setProjectName(projectForm.getTitle());
+            projectEntity.setLogo(projectForm.getLogo());
+            projectEntity.setDomain(projectForm.getDomain());
+            projectEntity.setSlogan(projectForm.getSlogan());
+            projectEntity.setMentorName(projectForm.getMentorName());
+            projectEntity.setTeamSize(projectForm.getTeamSize() != null ? Integer.parseInt(projectForm.getTeamSize()) : null);
+            projectEntity.setDescription(projectForm.getDescription());
+            projectEntity.setNeeds(projectForm.getNeeds());
+            
+            // 获取学生的学校ID
+            UserEntity userEntity = userMapper.selectById(UserContext.getUserId());
+            if (userEntity != null && userEntity.getOwnerId() != null) {
+                projectEntity.setSchoolId(userEntity.getOwnerId());
+            }
+            
+            // 设置默认状态为待审核
+            projectEntity.setStatus("0");
+            projectEntity.setCreateTime(com.gxcj.utils.EntityHelper.now());
+            projectEntity.setUpdateTime(com.gxcj.utils.EntityHelper.now());
+            
+            projectMapper.insert(projectEntity);
+        } else {
+            // 更新项目
+            ProjectEntity projectEntity = projectMapper.selectById(projectForm.getId());
+            if (projectEntity == null) {
+                throw new com.gxcj.exception.BusinessException("项目不存在");
+            }
+            
+            // 验证是否是项目创建者
+            if (!projectEntity.getUserId().equals(UserContext.getUserId())) {
+                throw new com.gxcj.exception.BusinessException("无权限修改此项目");
+            }
+            
+            projectEntity.setProjectName(projectForm.getTitle());
+            projectEntity.setLogo(projectForm.getLogo());
+            projectEntity.setDomain(projectForm.getDomain());
+            projectEntity.setSlogan(projectForm.getSlogan());
+            projectEntity.setMentorName(projectForm.getMentorName());
+            projectEntity.setTeamSize(projectForm.getTeamSize() != null ? Integer.parseInt(projectForm.getTeamSize()) : null);
+            projectEntity.setDescription(projectForm.getDescription());
+            projectEntity.setNeeds(projectForm.getNeeds());
+            projectEntity.setUpdateTime(com.gxcj.utils.EntityHelper.now());
+            
+            projectMapper.updateById(projectEntity);
+        }
+    }
+
+    @Override
+    public void delete(String projectId) {
+        ProjectEntity projectEntity = projectMapper.selectById(projectId);
+        if (projectEntity == null) {
+            throw new com.gxcj.exception.BusinessException("项目不存在");
+        }
+        
+        // 验证是否是项目创建者
+        if (!projectEntity.getUserId().equals(UserContext.getUserId())) {
+            throw new com.gxcj.exception.BusinessException("无权限删除此项目");
+        }
+        
+        projectMapper.deleteById(projectId);
     }
 }

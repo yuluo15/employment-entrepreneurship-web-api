@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import org.apache.ibatis.type.JdbcType;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
