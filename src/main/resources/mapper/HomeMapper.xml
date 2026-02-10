@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gxcj.mapper.HomeMapper">
+
+    <!-- 获取学校排行（按学生数量） -->
+    <select id="getSchoolRank" resultType="com.gxcj.entity.vo.HomeOverviewVo$SchoolRankItem">
+        SELECT 
+            s.school_id as schoolId,
+            sch.name as schoolName,
+            COUNT(*) as studentCount
+        FROM biz_student s
+        INNER JOIN sys_school sch ON s.school_id = sch.id
+        WHERE sch.is_deleted = 0
+        GROUP BY s.school_id, sch.name
+        ORDER BY studentCount DESC
+        LIMIT 10
+    </select>
+
+    <!-- 获取创业领域分布 -->
+    <select id="getDomainDistribution" resultType="com.gxcj.entity.vo.HomeOverviewVo$DomainDistributionItem">
+        SELECT 
+            p.domain as domain,
+            COALESCE(d.dict_label, p.domain) as domainLabel,
+            COUNT(*) as count
+        FROM biz_project p
+        LEFT JOIN sys_dict_data d ON p.domain = d.dict_value AND d.dict_type = 'sys_project_domain'
+        WHERE p.domain IS NOT NULL AND p.domain != ''
+        GROUP BY p.domain, d.dict_label
+        ORDER BY count DESC
+    </select>
+
+    <!-- 获取最新入驻企业 -->
+    <select id="getLatestCompanies" resultType="com.gxcj.entity.vo.HomeOverviewVo$LatestCompanyItem">
+        SELECT 
+            c.id as companyId,
+            c.name as companyName,
+            c.industry as industry,
+            COALESCE(job_counts.job_count, 0) as jobCount,
+            TO_CHAR(c.create_time, 'YYYY-MM-DD HH24:MI:SS') as createTime
+        FROM sys_company c
+        LEFT JOIN (
+            SELECT company_id, COUNT(*) as job_count
+            FROM biz_job
+            GROUP BY company_id
+        ) job_counts ON c.id = job_counts.company_id
+        WHERE c.is_deleted = 0
+        ORDER BY c.create_time DESC
+        LIMIT 5
+    </select>
+
+</mapper>

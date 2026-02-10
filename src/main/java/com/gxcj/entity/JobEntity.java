@@ -26,4 +26,6 @@ public class JobEntity {
     private Timestamp createTime;
     private String hrId;
     private String experience;
+    private Integer audit;
+    private String reason;
 }

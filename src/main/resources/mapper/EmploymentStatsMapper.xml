@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gxcj.mapper.EmploymentStatsMapper">
+
+    <!-- 获取KPI指标数据 -->
+    <select id="getKpiData" resultType="map">
+        SELECT 
+            COUNT(*) as totalGraduates,
+            COUNT(CASE WHEN employment_status != '0' THEN 1 END) as employedCount,
+            ROUND(COUNT(CASE WHEN employment_status != '0' THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0), 1) as employmentRate,
+            (SELECT COUNT(DISTINCT user_id) FROM biz_project WHERE status IN ('1', '3')) as entrepreneurshipCount,
+            (SELECT ROUND(AVG(CAST(expected_salary AS INTEGER)) / 1000.0, 1) 
+             FROM biz_student_resume r
+             INNER JOIN biz_student s ON r.student_id = s.student_id
+             WHERE s.graduation_year = #{graduationYear} 
+             AND r.expected_salary ~ '^[0-9]+$') as avgSalary
+        FROM biz_student 
+        WHERE graduation_year = #{graduationYear}
+    </select>
+
+    <!-- 获取各校就业率排行 TOP 10 -->
+    <select id="getSchoolRank" resultType="com.gxcj.entity.vo.EmploymentStatsVo$SchoolRankItem">
+        SELECT 
+            s.school_id as schoolId,
+            sch.name as schoolName,
+            COUNT(*) as totalStudents,
+            COUNT(CASE WHEN s.employment_status != '0' THEN 1 END) as employedStudents,
+            ROUND(COUNT(CASE WHEN s.employment_status != '0' THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0), 1) as employmentRate
+        FROM biz_student s
+        LEFT JOIN sys_school sch ON s.school_id = sch.id
+        WHERE s.graduation_year = #{graduationYear}
+        GROUP BY s.school_id, sch.name
+        HAVING COUNT(*) > 0
+        ORDER BY employmentRate DESC
+        LIMIT 10
+    </select>
+
+    <!-- 获取就业状态分布 -->
+    <select id="getEmploymentStatusDistribution" resultType="com.gxcj.entity.vo.EmploymentStatsVo$StatusDistributionItem">
+        SELECT 
+            COALESCE(d.dict_label, '未知状态') as statusName,
+            COUNT(*) as count,
+            CONCAT(ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM biz_student WHERE graduation_year = #{graduationYear}), 1), '%') as percentage
+        FROM biz_student s
+        LEFT JOIN sys_dict_data d ON s.employment_status = d.dict_value AND d.dict_type = 'sys_emp_status'
+        WHERE s.graduation_year = #{graduationYear}
+        GROUP BY s.employment_status, d.dict_label
+        ORDER BY count DESC
+    </select>
+
+    <!-- 获取薪资分布 -->
+    <select id="getSalaryDistribution" resultType="com.gxcj.entity.vo.EmploymentStatsVo$SalaryDistributionItem">
+        SELECT 
+            salary_range as range,
+            COUNT(*) as count
+        FROM (
+            SELECT 
+                CASE 
+                    WHEN CAST(r.expected_salary AS INTEGER) &lt; 3000 THEN '3k以下'
+                    WHEN CAST(r.expected_salary AS INTEGER) BETWEEN 3000 AND 4999 THEN '3k-5k'
+                    WHEN CAST(r.expected_salary AS INTEGER) BETWEEN 5000 AND 7999 THEN '5k-8k'
+                    ELSE '8k以上'
+                END as salary_range
+            FROM biz_student_resume r
+            INNER JOIN biz_student s ON r.student_id = s.student_id
+            WHERE s.graduation_year = #{graduationYear} 
+            AND r.expected_salary ~ '^[0-9]+$'
+        ) t
+        GROUP BY salary_range
+        ORDER BY CASE salary_range
+            WHEN '3k以下' THEN 1
+            WHEN '3k-5k' THEN 2
+            WHEN '5k-8k' THEN 3
+            WHEN '8k以上' THEN 4
+        END
+    </select>
+
+    <!-- 获取热门行业 TOP5 -->
+    <select id="getHotIndustries" resultType="com.gxcj.entity.vo.EmploymentStatsVo$IndustryItem">
+        SELECT 
+            COALESCE(c.industry, '其他') as industry,
+            COUNT(DISTINCT d.student_id) as count
+        FROM biz_job_delivery d
+        INNER JOIN biz_job j ON d.job_id = j.job_id
+        INNER JOIN sys_company c ON j.company_id = c.id
+        INNER JOIN biz_student s ON d.student_id = s.student_id
+        WHERE s.graduation_year = #{graduationYear} 
+        AND d.status IN ('2', '3')
+        GROUP BY c.industry
+        ORDER BY count DESC
+        LIMIT 5
+    </select>
+
+    <!-- 获取创业项目统计 -->
+    <select id="getEntrepreneurshipStats" resultType="map">
+        SELECT 
+            COUNT(*) as totalProjects,
+            COUNT(CASE WHEN status IN ('1', '3') THEN 1 END) as approvedProjects,
+            COUNT(CASE WHEN status = '0' THEN 1 END) as pendingProjects
+        FROM biz_project
+    </select>
+
+    <!-- 获取创业领域分布 -->
+    <select id="getDomainDistribution" resultType="com.gxcj.entity.vo.EmploymentStatsVo$DomainDistributionItem">
+        SELECT 
+            COALESCE(d.dict_label, p.domain) as domain,
+            COUNT(*) as count
+        FROM biz_project p
+        LEFT JOIN sys_dict_data d ON p.domain = d.dict_value AND d.dict_type = 'sys_project_domain'
+        WHERE p.status IN ('1', '3')
+        AND p.domain IS NOT NULL
+        AND p.domain != ''
+        GROUP BY p.domain, d.dict_label
+        ORDER BY count DESC
+        LIMIT 10
+    </select>
+
+</mapper>
