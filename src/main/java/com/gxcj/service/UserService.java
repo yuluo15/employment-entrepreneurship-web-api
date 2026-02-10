@@ -7,4 +7,6 @@ import org.apache.ibatis.annotations.Param;
 
 public interface UserService {
     UserVo login(AuthController.UserReq userReq);
+
+    void changePassword(AuthController.PasswordReq passwordReq);
 }

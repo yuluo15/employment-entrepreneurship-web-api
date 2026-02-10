@@ -38,9 +38,22 @@ public class AuthController {
         return Result.success();
     }
 
+    @PostMapping("/changePassword")
+    public Result<Void> changePassword(@RequestBody PasswordReq passwordReq){
+        userService.changePassword(passwordReq);
+        return Result.success();
+    }
+
     @Data
     public static class UserReq{
         public String loginName;
         public String password;
+    }
+
+    @Data
+    public static class PasswordReq{
+        public String userId;
+        public String oldPassword;
+        public String newPassword;
     }
 }

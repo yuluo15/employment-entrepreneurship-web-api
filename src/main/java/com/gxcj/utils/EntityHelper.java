@@ -17,4 +17,8 @@ public class EntityHelper {
     public static String encodedPassword(String password) {
         return new BCryptPasswordEncoder().encode(password);
     }
+
+    public static Boolean matchesPassword(String password, String encodedPassword) {
+        return new BCryptPasswordEncoder().matches(password, encodedPassword);
+    }
 }

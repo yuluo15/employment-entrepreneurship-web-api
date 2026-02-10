@@ -3,9 +3,11 @@ package com.gxcj.service.impl;
 import com.alibaba.fastjson2.JSON;
 import com.gxcj.constant.SysConstant;
 import com.gxcj.controller.AuthController;
+import com.gxcj.entity.UserEntity;
 import com.gxcj.entity.dto.LoginUser;
 import com.gxcj.entity.vo.UserVo;
 import com.gxcj.exception.BusinessException;
+import com.gxcj.mapper.UserMapper;
 import com.gxcj.service.UserService;
 import com.gxcj.utils.EntityHelper;
 import com.gxcj.utils.JwtUtil;
@@ -26,10 +28,12 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
+    @Autowired
+    private UserMapper userMapper;
 
     public UserVo login(AuthController.UserReq userReq) {
 
-        String s = EntityHelper.encodedPassword("123456");
+        String s = EntityHelper.encodedPassword("12345678");
         // 1. 使用 AuthenticationManager 进行认证
         // 该方法会自动调用 UserDetailsServiceImpl.loadUserByUsername
         // 并且会自动比对密码（它知道如何处理 BCrypt 加密）
@@ -74,5 +78,22 @@ public class UserServiceImpl implements UserService {
         userVo.setToken(jwt);
 
         return userVo;
+    }
+
+    @Override
+    public void changePassword(AuthController.PasswordReq passwordReq) {
+        UserEntity userEntity = userMapper.selectById(passwordReq.getUserId());
+        if(userEntity == null){
+            throw new BusinessException("账号不存在");
+        }
+        if (!EntityHelper.matchesPassword(passwordReq.getOldPassword(), userEntity.getPassword())) {
+            throw new BusinessException("旧密码错误");
+        }
+        if (passwordReq.getOldPassword().equals(passwordReq.getNewPassword())) {
+            throw new BusinessException("新密码不能与旧密码相同");
+        }
+
+        userEntity.setPassword(EntityHelper.encodedPassword(passwordReq.getNewPassword()));
+        userMapper.updateById(userEntity);
     }
 }
