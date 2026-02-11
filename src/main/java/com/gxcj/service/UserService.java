@@ -9,4 +9,14 @@ public interface UserService {
     UserVo login(AuthController.UserReq userReq);
 
     void changePassword(AuthController.PasswordReq passwordReq);
+
+    /**
+     * 获取当前用户信息
+     */
+    UserEntity getUserInfo(String userId);
+
+    /**
+     * 更新用户信息
+     */
+    void updateUserInfo(UserEntity userEntity);
 }

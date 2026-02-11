@@ -9,5 +9,7 @@ public enum DictTypeEnum {
     sys_company_stage,
     sys_welfare,
     sys_project_status,
-    sys_project_domain;
+    sys_project_domain,
+    sys_salary_range,
+    sys_education;
 }

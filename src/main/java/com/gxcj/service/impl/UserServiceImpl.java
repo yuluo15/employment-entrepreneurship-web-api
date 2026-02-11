@@ -96,4 +96,53 @@ public class UserServiceImpl implements UserService {
         userEntity.setPassword(EntityHelper.encodedPassword(passwordReq.getNewPassword()));
         userMapper.updateById(userEntity);
     }
+
+    @Override
+    public UserEntity getUserInfo(String userId) {
+        UserEntity userEntity = userMapper.selectById(userId);
+        if (userEntity == null) {
+            throw new BusinessException("用户不存在");
+        }
+        
+        // 清空敏感信息
+        userEntity.setPassword(null);
+        
+        return userEntity;
+    }
+
+    @Override
+    public void updateUserInfo(UserEntity userEntity) {
+        // 验证用户是否存在
+        UserEntity existUser = userMapper.selectById(userEntity.getId());
+        if (existUser == null) {
+            throw new BusinessException("用户不存在");
+        }
+        
+        // 只更新允许修改的字段
+        UserEntity updateEntity = new UserEntity();
+        updateEntity.setId(userEntity.getId());
+        
+        if (userEntity.getEmail() != null) {
+            updateEntity.setEmail(userEntity.getEmail());
+        }
+        if (userEntity.getPhone() != null) {
+            updateEntity.setPhone(userEntity.getPhone());
+        }
+        if (userEntity.getNickname() != null) {
+            updateEntity.setNickname(userEntity.getNickname());
+        }
+        if (userEntity.getRealName() != null) {
+            updateEntity.setRealName(userEntity.getRealName());
+        }
+        if (userEntity.getAvatar() != null) {
+            updateEntity.setAvatar(userEntity.getAvatar());
+        }
+        if (userEntity.getGender() != null) {
+            updateEntity.setGender(userEntity.getGender());
+        }
+        
+        updateEntity.setUpdateTime(EntityHelper.now());
+        
+        userMapper.updateById(updateEntity);
+    }
 }
