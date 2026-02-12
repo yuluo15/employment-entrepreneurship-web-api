@@ -110,10 +110,27 @@ public class InteractionController {
         Set<String> jobIds = page.getRecords().stream().map(JobDeliveryEntity::getJobId).collect(Collectors.toSet());
         Set<String> compIds = page.getRecords().stream().map(JobDeliveryEntity::getCompanyId).collect(Collectors.toSet());
 
-        Map<String, JobEntity> jobMap = jobMapper.selectBatchIds(jobIds).stream()
-                .collect(Collectors.toMap(JobEntity::getId, Function.identity()));
-        Map<String, CompanyEntity> compMap = companyMapper.selectBatchIds(compIds).stream()
-                .collect(Collectors.toMap(CompanyEntity::getId, Function.identity()));
+        Map<String, JobEntity> jobMap;
+        if (!jobIds.isEmpty()) {
+            jobMap = jobMapper.selectList(
+                    new LambdaQueryWrapper<JobEntity>()
+                            .in(JobEntity::getId, jobIds))
+                    .stream()
+                    .collect(Collectors.toMap(JobEntity::getId, Function.identity()));
+        } else {
+            jobMap = new HashMap<>();
+        }
+
+        Map<String, CompanyEntity> compMap;
+        if (!compIds.isEmpty()) {
+            compMap = companyMapper.selectList(
+                    new LambdaQueryWrapper<CompanyEntity>()
+                            .in(CompanyEntity::getId, compIds))
+                    .stream()
+                    .collect(Collectors.toMap(CompanyEntity::getId, Function.identity()));
+        } else {
+            compMap = new HashMap<>();
+        }
 
         List<StudentDeliveryVo> list = page.getRecords().stream().map(d -> {
             StudentDeliveryVo vo = new StudentDeliveryVo();

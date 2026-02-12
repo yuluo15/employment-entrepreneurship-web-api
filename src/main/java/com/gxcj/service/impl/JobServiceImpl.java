@@ -107,9 +107,9 @@ public class JobServiceImpl implements JobService {
                 searchResultVo.setType(type);
                 searchResultVo.setTitle(companyEntity.getName());
                 String industry = String.join(",", Arrays.stream(companyEntity.getIndustry().split(",")).toList()
-                                                                    .stream()
-                                                                    .filter(map::containsKey)
-                                                                    .map(map::get).toList());
+                        .stream()
+                        .filter(map::containsKey)
+                        .map(map::get).toList());
                 searchResultVo.setSubTitle(industry + "|" + companyEntity.getScale());
                 searchResultVo.setAvatar(companyEntity.getLogo());
                 searchResultVo.setNickName(companyEntity.getName());
@@ -158,7 +158,7 @@ public class JobServiceImpl implements JobService {
                 searchResultVo.setOwnerId(projectEntity.getSchoolId());
                 return searchResultVo;
             }).toList();
-            return  new PageResult<>(projectEntityPage.getTotal(), list);
+            return new PageResult<>(projectEntityPage.getTotal(), list);
         }
         return null;
     }
@@ -178,12 +178,12 @@ public class JobServiceImpl implements JobService {
                 .filter(map::containsKey)
                 .map(map::get).toList());
         StringBuilder stringBuilder = new StringBuilder();
-        if (StringUtils.isNotEmpty(jobEntity.getDescription())){
+        if (StringUtils.isNotEmpty(jobEntity.getDescription())) {
             stringBuilder.append("<b>【岗位职责】</b><br/>");
             stringBuilder.append(jobEntity.getDescription());
             stringBuilder.append("<br/><br/>");
         }
-        if (StringUtils.isNotEmpty(jobEntity.getRequirement())){
+        if (StringUtils.isNotEmpty(jobEntity.getRequirement())) {
             stringBuilder.append("<b>【任职要求】</b><br/>");
             stringBuilder.append(jobEntity.getRequirement());
         }
@@ -223,5 +223,253 @@ public class JobServiceImpl implements JobService {
             jobDetailVo.setIsApplied(true);
         }
         return jobDetailVo;
+    }
+
+    @Override
+    public String addJob(JobEntity jobEntity, String userId) {
+        // 1. 获取HR信息
+        HrEntity hrEntity = hrMapper.selectOne(new LambdaQueryWrapper<HrEntity>()
+                .eq(HrEntity::getUserId, userId));
+        if (hrEntity == null) {
+            throw new com.gxcj.exception.BusinessException("您不是企业HR，无法发布职位");
+        }
+
+        // 2. 设置职位信息
+        jobEntity.setId(com.gxcj.utils.EntityHelper.uuid());
+        jobEntity.setCompanyId(hrEntity.getCompanyId());
+        jobEntity.setHrId(hrEntity.getHrId());
+
+        // 3. 设置初始状态
+        jobEntity.setStatus(1);        // 在招
+        jobEntity.setAudit(0);         // 待审核
+        jobEntity.setViewCount(0);     // 阅读量初始化为0
+        jobEntity.setCreateTime(com.gxcj.utils.EntityHelper.now());
+
+        // 4. 插入数据库
+        jobMapper.insert(jobEntity);
+
+        return jobEntity.getId();
+    }
+
+    @Override
+    public void updateJob(JobEntity jobEntity, String userId) {
+        // 1. 获取HR信息
+        HrEntity hrEntity = hrMapper.selectOne(new LambdaQueryWrapper<HrEntity>()
+                .eq(HrEntity::getUserId, userId));
+        if (hrEntity == null) {
+            throw new com.gxcj.exception.BusinessException("您不是企业HR，无法修改职位");
+        }
+
+        // 2. 验证职位是否存在
+        JobEntity existJob = jobMapper.selectById(jobEntity.getId());
+        if (existJob == null) {
+            throw new com.gxcj.exception.BusinessException("职位不存在");
+        }
+
+        // 3. 权限验证：只能修改自己公司的职位
+        if (!existJob.getCompanyId().equals(hrEntity.getCompanyId())) {
+            throw new com.gxcj.exception.BusinessException("无权限修改其他公司的职位");
+        }
+
+        // 4. 权限验证：只能修改自己发布的职位
+        if (!existJob.getHrId().equals(hrEntity.getHrId())) {
+            throw new com.gxcj.exception.BusinessException("只能修改自己发布的职位");
+        }
+
+        // 5. 状态限制：已下架的职位不允许修改
+        if (existJob.getStatus() == 0) {
+            throw new com.gxcj.exception.BusinessException("已下架的职位不允许修改");
+        }
+
+        // 6. 如果职位已被驳回，修改后需要重新审核
+        if (existJob.getAudit() == 2) {
+            jobEntity.setAudit(0);  // 重新审核
+            jobEntity.setReason(null);  // 清空驳回原因
+        }
+
+        // 7. 更新职位信息（只更新允许修改的字段）
+        JobEntity updateEntity = new JobEntity();
+        updateEntity.setId(jobEntity.getId());
+        updateEntity.setJobName(jobEntity.getJobName());
+        updateEntity.setSalaryRange(jobEntity.getSalaryRange());
+        updateEntity.setCity(jobEntity.getCity());
+        updateEntity.setEducation(jobEntity.getEducation());
+        updateEntity.setExperience(jobEntity.getExperience());
+        updateEntity.setTags(jobEntity.getTags());
+        updateEntity.setDescription(jobEntity.getDescription());
+        updateEntity.setRequirement(jobEntity.getRequirement());
+        updateEntity.setContactPhone(jobEntity.getContactPhone());
+
+        // 如果是被驳回状态，设置为待审核
+        if (existJob.getAudit() == 2) {
+            updateEntity.setAudit(0);
+            updateEntity.setReason(null);
+        }
+
+        jobMapper.updateById(updateEntity);
+    }
+
+    @Override
+    public JobEntity getJobForEdit(String jobId, String userId) {
+        // 1. 获取HR信息
+        HrEntity hrEntity = hrMapper.selectOne(new LambdaQueryWrapper<HrEntity>()
+                .eq(HrEntity::getUserId, userId));
+        if (hrEntity == null) {
+            throw new com.gxcj.exception.BusinessException("您不是企业HR");
+        }
+
+        // 2. 查询职位信息
+        JobEntity jobEntity = jobMapper.selectById(jobId);
+        if (jobEntity == null) {
+            throw new com.gxcj.exception.BusinessException("职位不存在");
+        }
+
+        // 3. 权限验证：只能查看自己公司的职位
+        if (!jobEntity.getCompanyId().equals(hrEntity.getCompanyId())) {
+            throw new com.gxcj.exception.BusinessException("无权限查看其他公司的职位");
+        }
+
+        // 4. 关联查询公司和HR信息
+        CompanyEntity companyEntity = companyMapper.selectById(jobEntity.getCompanyId());
+        HrEntity jobHr = hrMapper.selectById(jobEntity.getHrId());
+
+        // 5. 设置额外信息（用于前端展示）
+        // 注意：这里可以根据需要添加更多字段
+
+        return jobEntity;
+    }
+
+    @Override
+    public PageResult<JobEntity> getCompanyJobList(com.gxcj.entity.query.CompanyJobQuery query, String userId) {
+        // 1. 获取HR信息
+        HrEntity hrEntity = hrMapper.selectOne(new LambdaQueryWrapper<HrEntity>()
+                .eq(HrEntity::getUserId, userId));
+        if (hrEntity == null) {
+            throw new com.gxcj.exception.BusinessException("您不是企业HR");
+        }
+
+        // 2. 分页查询职位列表（只查询自己公司的职位）
+        Page<JobEntity> page = jobMapper.selectPage(
+                new Page<>(query.getPageNum(), query.getPageSize()),
+                new LambdaQueryWrapper<JobEntity>()
+                        .eq(JobEntity::getCompanyId, hrEntity.getCompanyId())
+                        .like(StringUtils.isNotEmpty(query.getJobName()),
+                                JobEntity::getJobName, query.getJobName())
+                        .eq(query.getAudit() != null,
+                                JobEntity::getAudit, query.getAudit())
+                        .eq(query.getStatus() != null,
+                                JobEntity::getStatus, query.getStatus())
+                        .orderByDesc(JobEntity::getCreateTime)
+        );
+
+        return new PageResult<>(page.getTotal(), page.getRecords());
+    }
+
+    @Override
+    public void deleteJob(String jobId, String userId) {
+        // 1. 获取HR信息
+        HrEntity hrEntity = hrMapper.selectOne(new LambdaQueryWrapper<HrEntity>()
+                .eq(HrEntity::getUserId, userId));
+        if (hrEntity == null) {
+            throw new com.gxcj.exception.BusinessException("您不是企业HR");
+        }
+
+        // 2. 验证职位是否存在
+        JobEntity jobEntity = jobMapper.selectById(jobId);
+        if (jobEntity == null) {
+            throw new com.gxcj.exception.BusinessException("职位不存在");
+        }
+
+        // 3. 权限验证：只能删除自己公司的职位
+        if (!jobEntity.getCompanyId().equals(hrEntity.getCompanyId())) {
+            throw new com.gxcj.exception.BusinessException("无权限删除其他公司的职位");
+        }
+
+        // 4. 权限验证：只能删除自己发布的职位
+        if (!jobEntity.getHrId().equals(hrEntity.getHrId())) {
+            throw new com.gxcj.exception.BusinessException("只能删除自己发布的职位");
+        }
+
+        // 5. 检查是否有投递记录
+        Long deliveryCount = jobDeliveryMapper.selectCount(new LambdaQueryWrapper<JobDeliveryEntity>()
+                .eq(JobDeliveryEntity::getJobId, jobId));
+        if (deliveryCount > 0) {
+            throw new com.gxcj.exception.BusinessException("该职位已有" + deliveryCount + "条投递记录，无法删除");
+        }
+
+        // 6. 物理删除（如果需要软删除，可以改为更新 is_deleted 字段）
+        jobMapper.deleteById(jobId);
+    }
+
+    @Override
+    public void offlineJob(String jobId, String userId) {
+        // 1. 获取HR信息
+        HrEntity hrEntity = hrMapper.selectOne(new LambdaQueryWrapper<HrEntity>()
+                .eq(HrEntity::getUserId, userId));
+        if (hrEntity == null) {
+            throw new com.gxcj.exception.BusinessException("您不是企业HR");
+        }
+
+        // 2. 验证职位是否存在
+        JobEntity jobEntity = jobMapper.selectById(jobId);
+        if (jobEntity == null) {
+            throw new com.gxcj.exception.BusinessException("职位不存在");
+        }
+
+        // 3. 权限验证：只能下架自己公司的职位
+        if (!jobEntity.getCompanyId().equals(hrEntity.getCompanyId())) {
+            throw new com.gxcj.exception.BusinessException("无权限下架其他公司的职位");
+        }
+
+        // 4. 状态验证：只能下架在招的职位
+        if (jobEntity.getStatus() == 0) {
+            throw new com.gxcj.exception.BusinessException("职位已下架，无需重复操作");
+        }
+
+        // 5. 更新状态为下架
+        JobEntity updateEntity = new JobEntity();
+        updateEntity.setId(jobId);
+        updateEntity.setStatus(0);
+
+        jobMapper.updateById(updateEntity);
+    }
+
+    @Override
+    public void onlineJob(String jobId, String userId) {
+        // 1. 获取HR信息
+        HrEntity hrEntity = hrMapper.selectOne(new LambdaQueryWrapper<HrEntity>()
+                .eq(HrEntity::getUserId, userId));
+        if (hrEntity == null) {
+            throw new com.gxcj.exception.BusinessException("您不是企业HR");
+        }
+
+        // 2. 验证职位是否存在
+        JobEntity jobEntity = jobMapper.selectById(jobId);
+        if (jobEntity == null) {
+            throw new com.gxcj.exception.BusinessException("职位不存在");
+        }
+
+        // 3. 权限验证：只能上架自己公司的职位
+        if (!jobEntity.getCompanyId().equals(hrEntity.getCompanyId())) {
+            throw new com.gxcj.exception.BusinessException("无权限上架其他公司的职位");
+        }
+
+        // 4. 状态验证：只能上架已下架的职位
+        if (jobEntity.getStatus() == 1) {
+            throw new com.gxcj.exception.BusinessException("职位已上架，无需重复操作");
+        }
+
+        // 5. 审核状态验证：只能上架已通过审核的职位
+        if (jobEntity.getAudit() != 1) {
+            String auditMsg = jobEntity.getAudit() == 0 ? "待审核" : "已驳回";
+            throw new com.gxcj.exception.BusinessException("只能上架已通过审核的职位，当前状态：" + auditMsg);
+        }
+
+        // 6. 更新状态为上架
+        JobEntity updateEntity = new JobEntity();
+        updateEntity.setId(jobId);
+        updateEntity.setStatus(1);
+
+        jobMapper.updateById(updateEntity);
     }
 }

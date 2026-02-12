@@ -28,4 +28,5 @@ public class JobEntity {
     private String experience;
     private Integer audit;
     private String reason;
+    private Integer jobType;
 }

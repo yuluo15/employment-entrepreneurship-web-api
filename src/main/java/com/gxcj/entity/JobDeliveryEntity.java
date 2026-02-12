@@ -15,4 +15,5 @@ public class JobDeliveryEntity {
     private String status;
     private Timestamp createTime;
     private Timestamp updateTime;
+    private String handleReply;   //增加处理回复 (发给学生的，如：面试地点、拒信原因)
 }
