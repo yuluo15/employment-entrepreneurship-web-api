@@ -13,7 +13,7 @@ public class ProjectEntity {
     @TableId(value = "project_id")
     private String projectId;
     private String userId;
-    private String SchoolId;
+    private String schoolId;
     private String projectName;
     private String logo;
     private String domain;

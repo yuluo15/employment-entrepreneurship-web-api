@@ -1,5 +1,6 @@
 package com.gxcj.entity;
 
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
@@ -8,6 +9,7 @@ import java.sql.Timestamp;
 @Data
 @TableName("biz_teacher")
 public class TeacherEntity {
+    @TableId
     private String teacherId;
     private String userId;
     private String schoolId;

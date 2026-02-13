@@ -361,3 +361,27 @@ CREATE TABLE public.biz_collection (
 	CONSTRAINT uk_biz_collection_user_target_type UNIQUE (user_id, target_id, type)
 );
 CREATE INDEX idx_biz_collection_user_id ON public.biz_collection USING btree (user_id);
+
+
+
+CREATE TABLE public.biz_project_application (
+	id varchar(255) NOT NULL,
+	project_id varchar(255) NOT NULL,
+	applicant_id varchar(255) NOT NULL,
+	applicant_name varchar(255) NOT NULL,
+	applicant_avatar varchar(500) NULL,
+	applicant_school varchar(255) NULL,
+	applicant_major varchar(255) NULL,
+	application_reason text NULL,
+	skills text NULL,
+	status varchar(20) NOT NULL DEFAULT 'PENDING'::character varying,
+	reply_message varchar(500) NULL,
+	reply_time timestamp NULL,
+	create_time timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+	update_time timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+	CONSTRAINT biz_project_application_pkey PRIMARY KEY (id),
+	CONSTRAINT uk_project_applicant UNIQUE (project_id, applicant_id)
+);
+CREATE INDEX idx_application_applicant ON public.biz_project_application USING btree (applicant_id);
+CREATE INDEX idx_application_project ON public.biz_project_application USING btree (project_id);
+CREATE INDEX idx_application_status ON public.biz_project_application USING btree (status);

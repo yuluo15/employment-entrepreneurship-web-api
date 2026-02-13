@@ -283,7 +283,8 @@ public class SchoolStudentServiceImpl implements SchoolStudentService {
                     student.setSchoolId(schoolId);
                     student.setStudentName(dto.getStudentName());
                     student.setStudentNo(dto.getStudentNo());
-                    student.setGender("男".equals(dto.getGender()) ? 1 : 2);
+//                    student.setGender("男".equals(dto.getGender()) ? 1 : 2);
+                    student.setGender("1");
                     student.setCollegeName(dto.getCollegeName());
                     student.setMajorName(dto.getMajorName());
                     student.setClassName(dto.getClassName());
@@ -345,7 +346,8 @@ public class SchoolStudentServiceImpl implements SchoolStudentService {
             SchoolStudentExportVo vo = new SchoolStudentExportVo();
             vo.setStudentNo(student.getStudentNo());
             vo.setStudentName(student.getStudentName());
-            vo.setGenderText(student.getGender() == 1 ? "男" : "女");
+//            vo.setGenderText(student.getGender() == 1 ? "男" : "女");
+            vo.setGenderText("男");
             vo.setCollegeName(student.getCollegeName());
             vo.setMajorName(student.getMajorName());
             vo.setClassName(student.getClassName());
@@ -414,13 +416,19 @@ public class SchoolStudentServiceImpl implements SchoolStudentService {
 
     private String getEmploymentStatusText(String status) {
         if (status == null) return "未知";
-        return switch (status) {
-            case "0" -> "待就业";
-            case "1" -> "已就业";
-            case "2" -> "升学";
-            case "3" -> "出国";
-            case "4" -> "创业";
-            default -> "未知";
-        };
+        switch (status) {
+            case "0":
+                return "待就业";
+            case "1":
+                return "已就业";
+            case "2":
+                return "升学";
+            case "3":
+                return "出国";
+            case "4":
+                return "创业";
+            default:
+                return "未知";
+        }
     }
 }

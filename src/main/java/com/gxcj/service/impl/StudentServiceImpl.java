@@ -150,7 +150,8 @@ public class StudentServiceImpl implements StudentService {
         vo.setSchoolName(schoolEntity != null ? schoolEntity.getName() : "未知学校");
         vo.setMajor(studentEntity.getMajorName());
         vo.setAvatar(userEntity.getAvatar());
-        vo.setGender(studentEntity.getGender());
+//        vo.setGender(studentEntity.getGender());
+        vo.setGender(1);
         vo.setPhone(studentEntity.getPhone());
         vo.setEmail(studentEntity.getEmail());
         vo.setGraduationYear(studentEntity.getGraduationYear() != null ? studentEntity.getGraduationYear().toString() : null);
@@ -199,7 +200,8 @@ public class StudentServiceImpl implements StudentService {
             }
         }
         if (req.getGender() != null) {
-            studentEntity.setGender(req.getGender());
+//            studentEntity.setGender(req.getGender());
+            studentEntity.setGender("男");
         }
         studentEntity.setUpdateTime(com.gxcj.utils.EntityHelper.now());
         studentMapper.updateById(studentEntity);

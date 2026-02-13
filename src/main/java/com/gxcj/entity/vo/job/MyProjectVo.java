@@ -16,4 +16,5 @@ public class MyProjectVo {
 
     private String createTime;
     private Integer teamSize;   // 团队人数
+    private Integer pendingApplicationCount;  // 待审核申请数量
 }

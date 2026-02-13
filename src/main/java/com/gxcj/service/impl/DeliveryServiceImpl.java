@@ -166,7 +166,8 @@ public class DeliveryServiceImpl implements DeliveryService {
                         vo.setStudentName(student.getStudentName());
                         vo.setStudentPhone(student.getPhone());
                         vo.setEmail(student.getEmail());
-                        vo.setGender(student.getGender());
+//                        vo.setGender(student.getGender());
+                        vo.setGender(1);
                         vo.setMajor(student.getMajorName());
                         vo.setGraduationYear(student.getGraduationYear());
                         vo.setEducation(student.getEducation());
@@ -665,7 +666,8 @@ public class DeliveryServiceImpl implements DeliveryService {
                         vo.setStudentName(student.getStudentName());
                         vo.setStudentPhone(student.getPhone());
                         vo.setEmail(student.getEmail());
-                        vo.setGender(student.getGender());
+//                        vo.setGender(student.getGender());
+                        vo.setGender(1);
                         vo.setMajor(student.getMajorName());
                         vo.setGraduationYear(student.getGraduationYear());
                         vo.setEducation(student.getEducation());

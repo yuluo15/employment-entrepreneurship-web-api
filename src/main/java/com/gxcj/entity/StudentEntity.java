@@ -14,7 +14,7 @@ public class StudentEntity {
     private String schoolId;
     private String studentName;
     private String studentNo;
-    private Integer gender;
+    private String gender;
     private String collegeName;
     private String majorName;
     private String className;

@@ -34,6 +34,12 @@ public class ProjectServiceImpl implements ProjectService {
     @Autowired
     private CollectionMapper collectionMapper;
 
+    @Autowired
+    private ProjectApplicationMapper projectApplicationMapper;
+
+    @Autowired
+    private StudentMapper studentMapper;
+
     @Override
     public ProjectDetailVo getProjectDetail(String projectId) {
         List<DictDataEntity> list = dictDataMapper.selectList(new LambdaQueryWrapper<DictDataEntity>()
@@ -57,6 +63,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         UserEntity userEntity = userMapper.selectById(projectEntity.getUserId());
         projectDetailVo.setLeaderName(userEntity.getNickname());
+        projectDetailVo.setLeaderPhone(userEntity.getPhone());
 
         CollectionEntity collectionEntity = collectionMapper.selectOne(new LambdaQueryWrapper<CollectionEntity>()
                 .eq(CollectionEntity::getUserId, UserContext.getUserId())
@@ -64,6 +71,26 @@ public class ProjectServiceImpl implements ProjectService {
         if (collectionEntity != null) {
             projectDetailVo.setIsCollected(true);
         }
+
+        // 判断是否是项目负责人
+        projectDetailVo.setIsOwner(projectEntity.getUserId().equals(UserContext.getUserId()));
+
+        // 查询申请状态（需要先获取学生ID）
+        LambdaQueryWrapper<StudentEntity> studentWrapper = new LambdaQueryWrapper<>();
+        studentWrapper.eq(StudentEntity::getUserId, UserContext.getUserId());
+        StudentEntity student = studentMapper.selectOne(studentWrapper);
+
+        if (student != null) {
+            ProjectApplicationEntity application = projectApplicationMapper.selectOne(
+                    new LambdaQueryWrapper<ProjectApplicationEntity>()
+                            .eq(ProjectApplicationEntity::getProjectId, projectId)
+                            .eq(ProjectApplicationEntity::getApplicantId, student.getStudentId())
+            );
+            if (application != null) {
+                projectDetailVo.setApplicationStatus(application.getStatus());
+            }
+        }
+
         return projectDetailVo;
     }
 
@@ -96,6 +123,15 @@ public class ProjectServiceImpl implements ProjectService {
             if (p.getStatus().equals("2")) {
                 vo.setAuditReason(p.getAuditReason());
             }
+            
+            // 查询待审核申请数量
+            Long pendingCount = projectApplicationMapper.selectCount(
+                    new LambdaQueryWrapper<ProjectApplicationEntity>()
+                            .eq(ProjectApplicationEntity::getProjectId, p.getProjectId())
+                            .eq(ProjectApplicationEntity::getStatus, "PENDING")
+            );
+            vo.setPendingApplicationCount(pendingCount.intValue());
+            
             return vo;
         }).collect(Collectors.toList());
         return new PageResult<>(page.getTotal(), list);
