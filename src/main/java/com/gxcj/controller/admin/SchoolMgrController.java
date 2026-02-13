@@ -24,7 +24,7 @@ public class SchoolMgrController {
     @GetMapping("/list")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public Result<PageResult<SchoolEntity>> list(@RequestParam Integer pageNum, @RequestParam Integer pageSize,
-                                         @RequestParam(required = false) String name, @RequestParam(required = false) Integer status) {
+                                                 @RequestParam(required = false) String name, @RequestParam(required = false) Integer status) {
         PageResult<SchoolEntity> list = schoolService.list(pageNum, pageSize, name, status);
         return Result.success(list);
     }

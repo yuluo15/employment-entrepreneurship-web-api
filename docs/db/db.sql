@@ -62,9 +62,14 @@ CREATE TABLE public.sys_notice (
 	create_time timestamp NULL DEFAULT CURRENT_TIMESTAMP,
 	update_time timestamp NULL DEFAULT CURRENT_TIMESTAMP,
 	publish_time timestamp NULL,
+	publisher_type varchar(255) NULL,
+	publisher_id varchar(255) NULL,
+	target_audience varchar(255) NULL,
 	CONSTRAINT sys_notice_pkey PRIMARY KEY (notice_id)
 );
+CREATE INDEX idx_notice_audience ON public.sys_notice USING btree (target_audience);
 CREATE INDEX idx_notice_publish_time ON public.sys_notice USING btree (publish_time);
+CREATE INDEX idx_notice_publisher ON public.sys_notice USING btree (publisher_type, publisher_id);
 CREATE INDEX idx_notice_status ON public.sys_notice USING btree (status);
 CREATE INDEX idx_notice_type ON public.sys_notice USING btree (notice_type);
 

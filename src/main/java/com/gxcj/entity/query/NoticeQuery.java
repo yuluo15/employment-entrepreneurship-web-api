@@ -9,4 +9,5 @@ public class NoticeQuery {
     private String noticeTitle;  // 标题（模糊查询）
     private String noticeType;   // 类型：1=通知, 2=公告, 3=政策, 4=新闻
     private Integer status;      // 状态：0=草稿, 1=已发布
+    private String source;       // 来源：admin=管理员发布, school=本校发布
 }

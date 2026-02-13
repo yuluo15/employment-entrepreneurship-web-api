@@ -43,6 +43,21 @@ public class NoticeEntity {
      */
 //    private String attachments;
 
+    /**
+     * 发布者类型: admin=管理员, school=学校
+     */
+    private String publisherType;
+
+    /**
+     * 发布者ID: 对于学校发布的公告，存储 school_id
+     */
+    private String publisherId;
+
+    /**
+     * 目标受众: all=所有人, school=学校教职工, student=学生
+     */
+    private String targetAudience;
+
     private String createBy;
     private Timestamp createTime;
     private Timestamp updateTime;
