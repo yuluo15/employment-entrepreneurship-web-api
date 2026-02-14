@@ -1,8 +1,10 @@
 package com.gxcj.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.gxcj.handle.ListToVectorTypeHandler;
 import lombok.Data;
 
 import java.sql.Timestamp;
@@ -29,4 +31,8 @@ public class JobEntity {
     private Integer audit;
     private String reason;
     private Integer jobType;
+    
+    // AI向量字段
+    @TableField(typeHandler = ListToVectorTypeHandler.class) // 指定处理器
+    private float[] embedding;
 }

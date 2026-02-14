@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import com.gxcj.handle.ListToVectorTypeHandler;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -59,6 +60,10 @@ public class StudentResumeEntity implements Serializable {
     private Integer viewCount;
     private Timestamp createTime;
     private Timestamp updateTime;
+    
+    // AI向量字段
+    @TableField(typeHandler = ListToVectorTypeHandler.class) // 指定处理器
+    private float[] embedding;
 
 
     @Data

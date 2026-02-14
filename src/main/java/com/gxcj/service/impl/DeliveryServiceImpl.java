@@ -241,7 +241,7 @@ public class DeliveryServiceImpl implements DeliveryService {
         }
 
         // 4. 状态验证
-        if (!JobDeliveryStatusEnum.DELIVERED.getValue().equals(delivery.getStatus())) {
+        if (!JobDeliveryStatusEnum.DELIVERED.name().equals(delivery.getStatus())) {
             throw new BusinessException("只能为待处理的简历安排面试");
         }
 
@@ -322,8 +322,9 @@ public class DeliveryServiceImpl implements DeliveryService {
             throw new BusinessException("无权限操作该投递记录");
         }
 
+        String value = JobDeliveryStatusEnum.DELIVERED.getValue();
         // 4. 状态验证
-        if (!JobDeliveryStatusEnum.DELIVERED.getValue().equals(delivery.getStatus())) {
+        if (!JobDeliveryStatusEnum.DELIVERED.name().equals(delivery.getStatus())) {
             throw new BusinessException("只能拒绝待处理的简历");
         }
 
