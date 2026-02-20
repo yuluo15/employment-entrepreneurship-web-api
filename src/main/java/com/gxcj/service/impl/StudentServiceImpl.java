@@ -14,12 +14,16 @@ import com.gxcj.exception.BusinessException;
 import com.gxcj.mapper.*;
 import com.gxcj.result.PageResult;
 import com.gxcj.service.StudentService;
+import com.gxcj.stutas.DictTypeEnum;
 import com.gxcj.stutas.JobDeliveryStatusEnum;
 import com.gxcj.stutas.StatusEnum;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class StudentServiceImpl implements StudentService {
@@ -42,16 +46,21 @@ public class StudentServiceImpl implements StudentService {
     private ProjectMapper projectMapper;
 
     public PageResult<StudentEntity> list(StudentQuery studentQuery) {
-//        PageHelper.startPage(studentQuery.getPageNum(), studentQuery.getPageSize());
+        List<DictDataEntity> dictList = dictDataMapper.selectList(new LambdaQueryWrapper<DictDataEntity>().eq(DictDataEntity::getDictType, DictTypeEnum.sys_education.name()));
+        Map<String, String> map = dictList.stream().collect(Collectors.toMap(DictDataEntity::getDictValue, DictDataEntity::getDictLabel, (x, y) -> x));
         Page<StudentEntity> page = studentMapper.selectPage(new Page<>(studentQuery.getPageNum(), studentQuery.getPageSize()), new LambdaQueryWrapper<StudentEntity>()
                 .eq(StringUtils.isNotEmpty(studentQuery.getSchoolId()), StudentEntity::getSchoolId, studentQuery.getSchoolId())
                 .eq(StringUtils.isNotEmpty(studentQuery.getStudentName()), StudentEntity::getStudentName, studentQuery.getStudentName())
                 .eq(StringUtils.isNotEmpty(studentQuery.getMajorName()), StudentEntity::getMajorName, studentQuery.getMajorName())
                 .eq(studentQuery.getGraduationYear() != null, StudentEntity::getGraduationYear, studentQuery.getGraduationYear())
                 .eq(StringUtils.isNotEmpty(studentQuery.getEmploymentStatus()), StudentEntity::getEmploymentStatus, studentQuery.getEmploymentStatus()));
-//        PageInfo<StudentEntity> pageInfo = new PageInfo<>(studentEntityList);
-//        return new PageResult<>(pageInfo.getTotal(), pageInfo.getList());
-        return new PageResult<>(page.getTotal(), page.getRecords());
+        List<StudentEntity> list = page.getRecords().stream().map(studentEntity -> {
+            StudentEntity studentEntity1 = new StudentEntity();
+            BeanUtils.copyProperties(studentEntity, studentEntity1);
+            studentEntity1.setEducation(map.get(studentEntity1.getEducation()));
+            return studentEntity1;
+        }).toList();
+        return new PageResult<>(page.getTotal(), list);
     }
 
     @Override

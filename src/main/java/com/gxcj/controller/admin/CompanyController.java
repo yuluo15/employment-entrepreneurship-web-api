@@ -75,10 +75,8 @@ public class CompanyController {
         private String name;
         @NotBlank
         private String code;
-        @NotBlank
-        private String adminAccount;
-        @NotBlank
-        private String password;
+//        private String adminAccount;
+//        private String password;
         private String industry;
         private String scale;
         private String contactPerson;

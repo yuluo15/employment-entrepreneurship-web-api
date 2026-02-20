@@ -3,10 +3,12 @@ package com.gxcj.service.impl;
 import com.alibaba.fastjson2.JSON;
 import com.gxcj.constant.SysConstant;
 import com.gxcj.controller.AuthController;
+import com.gxcj.entity.RoleEntity;
 import com.gxcj.entity.UserEntity;
 import com.gxcj.entity.dto.LoginUser;
 import com.gxcj.entity.vo.UserVo;
 import com.gxcj.exception.BusinessException;
+import com.gxcj.mapper.RoleMapper;
 import com.gxcj.mapper.UserMapper;
 import com.gxcj.service.UserService;
 import com.gxcj.utils.EntityHelper;
@@ -30,6 +32,8 @@ public class UserServiceImpl implements UserService {
     private StringRedisTemplate stringRedisTemplate;
     @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private RoleMapper roleMapper;
 
     public UserVo login(AuthController.UserReq userReq) {
 
@@ -102,6 +106,11 @@ public class UserServiceImpl implements UserService {
         UserEntity userEntity = userMapper.selectById(userId);
         if (userEntity == null) {
             throw new BusinessException("用户不存在");
+        }
+
+        if (!userEntity.getRoleKey().isEmpty()){
+            RoleEntity roleEntity = roleMapper.selectById(userEntity.getRoleKey());
+            userEntity.setRoleKey(roleEntity.getRoleName());
         }
         
         // 清空敏感信息

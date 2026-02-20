@@ -1,0 +1,55 @@
+INSERT INTO public.sys_dict_data (id,dict_sort,dict_label,dict_value,dict_type,status,remark,create_time,is_deleted) VALUES
+	 ('5011334693d54495a0ca3c7c109e2c3b',1,'五险一金','INSURANCE','sys_welfare',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('d78949637b744848acfcb7c5ebb8af74',2,'周末双休','WEEKEND','sys_welfare',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('47409faba68e4d2481ce8aaf1315263a',3,'年底双薪','DOUBLE_PAY','sys_welfare',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('d47330ef1c5848dc810f67ec99a674a5',4,'带薪年假','VACATION','sys_welfare',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('180ab553e45b4c069e1f63065f4d06e5',5,'弹性工作','FLEXIBLE','sys_welfare',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('742830a380a844bb9e702d6779755960',6,'股票期权','OPTION','sys_welfare',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('bc0b59014d434849ab10a947141bb68f',7,'包吃包住','FOOD_HOUSE','sys_welfare',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('6d3ed32282994c5dbd64ee48bbadc7d2',8,'定期体检','CHECKUP','sys_welfare',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('2cd6125246924816bd1873682ac7ee35',1,'未融资','NONE','sys_company_stage',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('1c50b67d6ad14e67a40f707a78e4d987',2,'天使轮','ANGEL','sys_company_stage',1,NULL,'2026-01-23 16:31:28.115841',0);
+INSERT INTO public.sys_dict_data (id,dict_sort,dict_label,dict_value,dict_type,status,remark,create_time,is_deleted) VALUES
+	 ('45c48a93d3b8453ebd4730aa0f724c6a',3,'A轮','A_ROUND','sys_company_stage',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('58c91097a33947ba84e99fb8a59cdbfb',4,'B轮','B_ROUND','sys_company_stage',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('c0273c8ec64a4e23a70da62cb0f47d91',5,'C轮','C_ROUND','sys_company_stage',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('f3136e2808f64820b8c30eb9f228d016',6,'D轮及以上','D_PLUS','sys_company_stage',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('119ca6446213481e8ee582f923863d20',7,'已上市','IPO','sys_company_stage',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('7b5c693ad28b419598e43c3012ecab66',8,'不需要融资','NO_NEED','sys_company_stage',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('6533bf9b7f9547bebfc4df8b48b4114a',2,'金融','FINANCE','sys_industry',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('fb37989f315246f7891e406263721ccc',3,'教育培训','EDUCATION','sys_industry',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('101',1,'男','1','sys_gender',1,NULL,'2026-01-14 14:40:09.592316',0),
+	 ('102',2,'女','2','sys_gender',1,NULL,'2026-01-14 14:40:09.592316',0);
+INSERT INTO public.sys_dict_data (id,dict_sort,dict_label,dict_value,dict_type,status,remark,create_time,is_deleted) VALUES
+	 ('201',1,'本科','BACHELOR','sys_education',1,NULL,'2026-01-14 14:40:09.592316',0),
+	 ('202',2,'硕士','MASTER','sys_education',1,NULL,'2026-01-14 14:40:09.592316',0),
+	 ('203',3,'大专','JUNIOR','sys_education',1,NULL,'2026-01-14 14:40:09.592316',0),
+	 ('301',1,'待就业','UNEMPLOYED','sys_emp_status',1,NULL,'2026-01-14 14:40:09.592316',0),
+	 ('302',2,'已签约','SIGNED','sys_emp_status',1,NULL,'2026-01-14 14:40:09.592316',0),
+	 ('303',3,'升学','FURTHER_STUDY','sys_emp_status',1,NULL,'2026-01-14 14:40:09.592316',0),
+	 ('4e16e78f1cad48bcb5261e86b14ef1a7',1,'教授','PROFESSOR','sys_title',1,NULL,'2026-01-14 16:48:11.8843',0),
+	 ('072b2369cc1e4428afe126bc12143c94',2,'副教授','ASSOC_PROF','sys_title',1,NULL,'2026-01-14 16:48:11.8843',0),
+	 ('30213a66aff44d2b9ffeb2e171ef7b71',3,'讲师','LECTURER','sys_title',1,NULL,'2026-01-14 16:48:11.8843',0),
+	 ('fad088cb96ae4644ba3277debd1d6447',4,'企业导师','MENTOR','sys_title',1,NULL,'2026-01-14 16:48:11.8843',0);
+INSERT INTO public.sys_dict_data (id,dict_sort,dict_label,dict_value,dict_type,status,remark,create_time,is_deleted) VALUES
+	 ('9273c4d6b8f4405ead419986e6e9d5a6',1,'互联网+','INTERNET_PLUS','sys_project_domain',1,NULL,'2026-01-14 16:48:11.8843',0),
+	 ('7ca38bc5ec344bfa96144bfd6b926d98',2,'智慧农业','SMART_AGRI','sys_project_domain',1,NULL,'2026-01-14 16:48:11.8843',0),
+	 ('3d46cae5f70647b381a42c758b418fed',3,'文化创意','CULTURE_CREATIVE','sys_project_domain',1,NULL,'2026-01-14 16:48:11.8843',0),
+	 ('881327837cbf4bf98d4244578cabbc81',4,'电子信息','ELECTRONIC_INFO','sys_project_domain',1,NULL,'2026-01-14 16:48:11.8843',0),
+	 ('e7b9f2a1c3d54e6f8a9b0c1d2e3f4a5b',1,'待审核','0','sys_project_status',1,NULL,'2026-01-16 16:56:15.669842',0),
+	 ('f8c0a3b2d4e65f7a9b0c1d2e3f4a5b6c',2,'孵化中','1','sys_project_status',1,NULL,'2026-01-16 16:56:15.669842',0),
+	 ('d9e1b4c3f5a76b8c9d0e1f2a3b4c5d6e',3,'已驳回','2','sys_project_status',1,NULL,'2026-01-16 16:56:15.669842',0),
+	 ('c0f2a5d4e6b87c9d0e1f2a3b4c5d6e7f',4,'已落地','3','sys_project_status',1,NULL,'2026-01-16 16:56:15.669842',0),
+	 ('67003fb0312a435ab24eaa314bab40b3',4,'电子商务','ECOMMERCE','sys_industry',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('6917d45f4a774be5bc7468688145a533',5,'专业服务','SERVICE','sys_industry',1,NULL,'2026-01-23 16:31:28.115841',0);
+INSERT INTO public.sys_dict_data (id,dict_sort,dict_label,dict_value,dict_type,status,remark,create_time,is_deleted) VALUES
+	 ('f72bc639858a485bb7614e2f8b56efb6',6,'文化传媒','MEDIA','sys_industry',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('0c0100d5114c4ef3bfb4de5c8f40f7da',7,'生产制造','MANUFACTURE','sys_industry',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('9c226e22bad74654bf3dfd112cbfbe60',8,'房地产','REAL_ESTATE','sys_industry',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('c5c4cc912ce84efea33f41fe61b5143d',1,'大厂','BIG_FACTORY','sys_company_tag',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('062e29065c3049a894beec9007458bdd',2,'独角兽','UNICORN','sys_company_tag',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('03d4082ab40842cfa26658d53f4567ca',3,'国企','STATE_OWNED','sys_company_tag',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('5011334693d54495a0ca3c7c109e2c2a',4,'外企','FOREIGN','sys_company_tag',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('d78949637b744848acfcb7c5ebb8af73',5,'上市公司','LISTED','sys_company_tag',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('47409faba68e4d2481ce8aaf13152632',6,'小而美','SMALL_BEAUTY','sys_company_tag',1,NULL,'2026-01-23 16:31:28.115841',0),
+	 ('5e32f094ec434d28af6acfcb0a4f6106',1,'互联网','IT','sys_industry',1,NULL,'2026-01-23 16:31:28.115841',0);

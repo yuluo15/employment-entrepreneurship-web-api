@@ -19,4 +19,5 @@ public class InterviewVo {
     private Integer status;
     private Integer interviewScore;
     private String interviewComment;
+    private String interviewResult;  // 面试结果：PASS/FAIL
 }

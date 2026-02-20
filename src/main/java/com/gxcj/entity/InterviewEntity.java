@@ -95,4 +95,9 @@ public class InterviewEntity {
      * 更新时间
      */
     private Timestamp updateTime;
+
+    /**
+     * 面试结果：PASS/FAIL
+     */
+    private String interviewResult;
 }

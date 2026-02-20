@@ -283,8 +283,8 @@ public class SchoolStudentServiceImpl implements SchoolStudentService {
                     student.setSchoolId(schoolId);
                     student.setStudentName(dto.getStudentName());
                     student.setStudentNo(dto.getStudentNo());
-//                    student.setGender("男".equals(dto.getGender()) ? 1 : 2);
-                    student.setGender("1");
+                    student.setGender("男".equals(dto.getGender()) ? "1" : "2");
+//                    student.setGender("1");
                     student.setCollegeName(dto.getCollegeName());
                     student.setMajorName(dto.getMajorName());
                     student.setClassName(dto.getClassName());

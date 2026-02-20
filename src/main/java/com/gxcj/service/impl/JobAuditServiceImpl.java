@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -39,7 +40,8 @@ public class JobAuditServiceImpl implements JobAuditService {
         List<DictDataEntity> dictList = dictDataMapper.selectList(new LambdaQueryWrapper<DictDataEntity>()
                 .in(DictDataEntity::getDictType, 
                     DictTypeEnum.sys_salary_range.name(), 
-                    DictTypeEnum.sys_education.name()));
+                    DictTypeEnum.sys_education.name(),
+                    DictTypeEnum.sys_welfare));
         Map<String, String> dictMap = dictList.stream()
                 .collect(Collectors.toMap(DictDataEntity::getDictValue, DictDataEntity::getDictLabel, (x, y) -> x));
 
@@ -77,7 +79,11 @@ public class JobAuditServiceImpl implements JobAuditService {
             vo.setEducation(job.getEducation());
             vo.setEducationLabel(dictMap.getOrDefault(job.getEducation(), job.getEducation()));
             vo.setExperience(job.getExperience());
-            vo.setTags(job.getTags());
+//            vo.setTags(job.getTags());
+            vo.setTags(String.join(",", Arrays.stream(job.getTags().split(","))
+                    .filter(dictMap::containsKey)
+                    .map(dictMap::get)
+                    .toList()));
             vo.setDescription(job.getDescription());
             vo.setRequirement(job.getRequirement());
             vo.setAudit(job.getAudit());

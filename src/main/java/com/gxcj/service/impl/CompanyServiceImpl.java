@@ -40,15 +40,25 @@ public class CompanyServiceImpl implements CompanyService {
     private JobMapper jobMapper;
 
     public PageResult<CompanyEntity> list(Integer pageNum, Integer pageSize, String name, String code, Integer status) {
-//        PageHelper.startPage(pageNum, pageSize);
+        List<DictDataEntity> dictList = dictDataMapper.selectList(new LambdaQueryWrapper<DictDataEntity>()
+                .eq(DictDataEntity::getDictType, DictTypeEnum.sys_industry.name()));
+        Map<String, String> map = dictList.stream().collect(Collectors.toMap(DictDataEntity::getDictValue, DictDataEntity::getDictLabel, (v1, v2) -> v1));
         Page<CompanyEntity> page = companyMapper.selectPage(new Page<>(pageNum, pageSize), new LambdaQueryWrapper<CompanyEntity>()
                 .eq(StringUtils.isNotEmpty(name), CompanyEntity::getName, name)
                 .eq(status != null, CompanyEntity::getStatus, status)
                 .eq(StringUtils.isNotEmpty(code), CompanyEntity::getCode, code)
                 .eq(CompanyEntity::getIsDeleted, DeleteStatusEnum.NOT_DELETE.getCode()));
-//        PageInfo<CompanyEntity> companyEntityPageInfo = new PageInfo<>(companyEntityList);
-//        return new PageResult<>(companyEntityPageInfo.getTotal(), companyEntityPageInfo.getList());
-        return new PageResult<>(page.getTotal(), page.getRecords());
+
+        List<CompanyEntity> list = page.getRecords().stream().map(companyEntity -> {
+            CompanyEntity companyEntity1 = new CompanyEntity();
+            BeanUtils.copyProperties(companyEntity, companyEntity1);
+            String industry = String.join(",", Arrays.stream(companyEntity.getIndustry().split(",")).filter(map::containsKey)
+                    .map(map::get)
+                    .toList());
+            companyEntity1.setIndustry(industry);
+            return companyEntity1;
+        }).toList();
+        return new PageResult<>(page.getTotal(), list);
     }
 
 //    @Transactional

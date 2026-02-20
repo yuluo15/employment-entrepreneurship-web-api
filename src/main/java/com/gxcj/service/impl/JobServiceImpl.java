@@ -271,10 +271,10 @@ public class JobServiceImpl implements JobService {
             throw new com.gxcj.exception.BusinessException("无权限修改其他公司的职位");
         }
 
-        // 4. 权限验证：只能修改自己发布的职位
-        if (!existJob.getHrId().equals(hrEntity.getHrId())) {
-            throw new com.gxcj.exception.BusinessException("只能修改自己发布的职位");
-        }
+//        // 4. 权限验证：只能修改自己发布的职位
+//        if (!existJob.getHrId().equals(hrEntity.getHrId())) {
+//            throw new com.gxcj.exception.BusinessException("只能修改自己发布的职位");
+//        }
 
         // 5. 状态限制：已下架的职位不允许修改
         if (existJob.getStatus() == 0) {

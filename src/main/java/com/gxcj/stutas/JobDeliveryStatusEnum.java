@@ -12,5 +12,8 @@ public enum JobDeliveryStatusEnum {
     ;
     private String value;
     private String description;
-    JobDeliveryStatusEnum(String value, String description) {}
+    JobDeliveryStatusEnum(String value, String description) {
+        this.value = value;
+        this.description = description;
+    }
 }

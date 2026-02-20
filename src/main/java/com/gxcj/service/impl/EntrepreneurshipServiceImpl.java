@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -51,7 +52,7 @@ public class EntrepreneurshipServiceImpl implements EntrepreneurshipService {
         // 获取项目领域字典
         List<DictDataEntity> domainDict = dictDataMapper.selectList(
                 new LambdaQueryWrapper<DictDataEntity>()
-                        .eq(DictDataEntity::getDictType, DictTypeEnum.sys_project_domain.name()));
+                        .in(DictDataEntity::getDictType, DictTypeEnum.sys_project_domain.name(), DictTypeEnum.sys_project_status.name()));
         Map<String, String> domainMap = domainDict.stream()
                 .collect(Collectors.toMap(DictDataEntity::getDictValue, DictDataEntity::getDictLabel, (x, y) -> x));
         
@@ -66,7 +67,7 @@ public class EntrepreneurshipServiceImpl implements EntrepreneurshipService {
         // 分页查询
         Page<ProjectEntity> page = projectMapper.selectPage(
                 new Page<>(pageNum, pageSize), queryWrapper);
-        
+
         // 转换为VO
         List<EntrepProjectVo> voList = page.getRecords().stream().map(project -> {
             EntrepProjectVo vo = EntrepProjectVo.builder()
@@ -78,8 +79,17 @@ public class EntrepreneurshipServiceImpl implements EntrepreneurshipService {
                     .mentorName(project.getMentorName())
                     .teamSize(project.getTeamSize())
                     .domain(project.getDomain())
-                    .domainLabel(domainMap.getOrDefault(project.getDomain(), project.getDomain()))
+//                    Arrays.stream(project.getDomain().split(","))
+//                            .filter(domainMap::containsKey)
+//                            .map(domainMap::get)
+//                            .toList()
+//                    .domainLabel(domainMap.getOrDefault(project.getDomain(), project.getDomain()))
+                    .domainLabel(String.join(",", Arrays.stream(project.getDomain().split(","))
+                            .filter(domainMap::containsKey)
+                            .map(domainMap::get)
+                            .toList()))
                     .status(project.getStatus())
+//                    .status(domainMap.get(project.getStatus()))
                     .description(project.getDescription())
                     .needs(project.getNeeds())
                     .auditReason(project.getAuditReason())

@@ -10,12 +10,15 @@ import com.gxcj.entity.query.InterviewQuery;
 import com.gxcj.entity.query.TalentQuery;
 import com.gxcj.entity.vo.DeliveryVo;
 import com.gxcj.entity.vo.InterviewVo;
+import com.gxcj.entity.vo.StudentResumeVo;
 import com.gxcj.exception.BusinessException;
 import com.gxcj.mapper.*;
 import com.gxcj.result.PageResult;
 import com.gxcj.service.DeliveryService;
+import com.gxcj.stutas.DictTypeEnum;
 import com.gxcj.stutas.JobDeliveryStatusEnum;
 import com.gxcj.utils.EntityHelper;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -49,9 +52,16 @@ public class DeliveryServiceImpl implements DeliveryService {
     private InterviewMapper interviewMapper;
     @Autowired
     private MessageMapper messageMapper;
+    @Autowired
+    private DictDataMapper dictDataMapper;
+    @Autowired
+    private UserMapper userMapper;
 
     @Override
     public PageResult<DeliveryVo> getDeliveryList(DeliveryQuery query, String userId) {
+        List<DictDataEntity> dictList = dictDataMapper.selectList(new LambdaQueryWrapper<DictDataEntity>()
+                .eq(DictDataEntity::getDictType, DictTypeEnum.sys_education));
+        Map<String, String> dictMap = dictList.stream().collect(Collectors.toMap(DictDataEntity::getDictValue, DictDataEntity::getDictLabel, (x, y) -> x));
         // 1. 获取HR信息
         HrEntity hrEntity = hrMapper.selectOne(new LambdaQueryWrapper<HrEntity>()
                 .eq(HrEntity::getUserId, userId));
@@ -159,7 +169,7 @@ public class DeliveryServiceImpl implements DeliveryService {
                     vo.setJobId(delivery.getJobId());
                     vo.setResumeId(delivery.getResumeId());
                     vo.setStatus(delivery.getStatus());
-                    vo.setDeliveryTime(delivery.getCreateTime() != null ? 
+                    vo.setDeliveryTime(delivery.getCreateTime() != null ?
                             delivery.getCreateTime().toString() : null);
 
                     if (student != null) {
@@ -170,8 +180,9 @@ public class DeliveryServiceImpl implements DeliveryService {
                         vo.setGender(1);
                         vo.setMajor(student.getMajorName());
                         vo.setGraduationYear(student.getGraduationYear());
-                        vo.setEducation(student.getEducation());
-                        
+//                        vo.setEducation(student.getEducation());
+                        vo.setEducation(dictMap.get(student.getEducation()));
+
                         // 获取学校名称
                         if (student.getSchoolId() != null) {
                             SchoolEntity school = schoolMapper.selectById(student.getSchoolId());
@@ -194,7 +205,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     }
 
     @Override
-    public StudentResumeEntity getResumeDetail(String resumeId, String userId) {
+    public StudentResumeVo getResumeDetail(String resumeId, String userId) {
         // 1. 获取HR信息
         HrEntity hrEntity = hrMapper.selectOne(new LambdaQueryWrapper<HrEntity>()
                 .eq(HrEntity::getUserId, userId));
@@ -207,6 +218,20 @@ public class DeliveryServiceImpl implements DeliveryService {
         if (resume == null) {
             throw new BusinessException("简历不存在");
         }
+        UserEntity userEntity = userMapper.selectById(userId);
+        StudentEntity studentEntity = studentMapper.selectOne(new LambdaQueryWrapper<StudentEntity>()
+                .eq(StudentEntity::getUserId, userId));
+        SchoolEntity schoolEntity = schoolMapper.selectById(studentEntity.getSchoolId());
+
+        StudentResumeVo resumeVo = new StudentResumeVo();
+        BeanUtils.copyProperties(resume, resumeVo);
+        resumeVo.setStudentName(studentEntity.getStudentName());
+        resumeVo.setStudentPhone(studentEntity.getPhone());
+        resumeVo.setEmail(studentEntity.getEmail());
+        resumeVo.setGender(userEntity.getGender());
+        resumeVo.setSchool(schoolEntity.getName());
+        resumeVo.setMajor(studentEntity.getMajorName());
+        resumeVo.setGraduationYear(studentEntity.getGraduationYear().toString());
 
         // 3. 验证权限：该简历是否投递给了当前公司
         Long count = jobDeliveryMapper.selectCount(new LambdaQueryWrapper<JobDeliveryEntity>()
@@ -217,7 +242,7 @@ public class DeliveryServiceImpl implements DeliveryService {
             throw new BusinessException("无权限查看该简历");
         }
 
-        return resume;
+        return resumeVo;
     }
 
     @Override
@@ -433,6 +458,7 @@ public class DeliveryServiceImpl implements DeliveryService {
                     vo.setStatus(interview.getStatus());
                     vo.setInterviewScore(interview.getInterviewScore());
                     vo.setInterviewComment(interview.getInterviewComment());
+                    vo.setInterviewResult(interview.getInterviewResult());  // 添加面试结果
 
                     if (student != null) {
                         vo.setStudentName(student.getStudentName());
@@ -476,25 +502,23 @@ public class DeliveryServiceImpl implements DeliveryService {
             throw new BusinessException("只能完成待面试状态的面试");
         }
 
-        // 5. 更新面试记录
+        // 5. 验证面试结果
+        if (!"PASS".equals(req.getResult()) && !"FAIL".equals(req.getResult())) {
+            throw new BusinessException("面试结果只能是PASS或FAIL");
+        }
+
+        // 6. 更新面试记录
         interview.setStatus(1);  // 已完成
         interview.setInterviewScore(req.getScore());
         interview.setInterviewComment(req.getComment());
+        interview.setInterviewResult(req.getResult());  // 保存面试结果
         interview.setUpdateTime(EntityHelper.now());
         interviewMapper.updateById(interview);
 
-        // 6. 根据面试结果更新投递状态
+        // 7. 更新投递状态为面试中（保持INTERVIEW状态，等待后续发放Offer或归档）
         JobDeliveryEntity delivery = jobDeliveryMapper.selectById(interview.getDeliveryId());
-        if (delivery != null) {
-            if ("PASS".equals(req.getResult())) {
-                delivery.setStatus(JobDeliveryStatusEnum.OFFER.getValue());
-                sendMessage(delivery.getStudentId(), "面试结果通知", 
-                        "恭喜您，面试通过！", 2, interview.getId());
-            } else if ("FAIL".equals(req.getResult())) {
-                delivery.setStatus(JobDeliveryStatusEnum.REJECT.getValue());
-                sendMessage(delivery.getStudentId(), "面试结果通知", 
-                        "很遗憾，本次面试未通过", 2, interview.getId());
-            }
+        if (delivery != null && !JobDeliveryStatusEnum.INTERVIEW.getValue().equals(delivery.getStatus())) {
+            delivery.setStatus(JobDeliveryStatusEnum.INTERVIEW.getValue());
             delivery.setUpdateTime(EntityHelper.now());
             jobDeliveryMapper.updateById(delivery);
         }
@@ -752,6 +776,33 @@ public class DeliveryServiceImpl implements DeliveryService {
                 req.getNotes() != null ? "备注：" + req.getNotes() : "");
         
         sendMessage(delivery.getStudentId(), "Offer通知", offerContent, 3, req.getDeliveryId());
+    }
+
+    @Override
+    public void archiveCandidate(String deliveryId, String userId) {
+        // 1. 获取HR信息
+        HrEntity hrEntity = hrMapper.selectOne(new LambdaQueryWrapper<HrEntity>()
+                .eq(HrEntity::getUserId, userId));
+        if (hrEntity == null) {
+            throw new BusinessException("您不是企业HR");
+        }
+
+        // 2. 查询投递记录
+        JobDeliveryEntity delivery = jobDeliveryMapper.selectById(deliveryId);
+        if (delivery == null) {
+            throw new BusinessException("投递记录不存在");
+        }
+
+        // 3. 权限验证
+        if (!delivery.getCompanyId().equals(hrEntity.getCompanyId())) {
+            throw new BusinessException("无权限操作该投递记录");
+        }
+
+        // 4. 更新投递状态为已拒绝（归档）
+        delivery.setStatus(JobDeliveryStatusEnum.REJECT.getValue());
+        delivery.setHandleReply("面试不通过");
+        delivery.setUpdateTime(EntityHelper.now());
+        jobDeliveryMapper.updateById(delivery);
     }
 
     /**

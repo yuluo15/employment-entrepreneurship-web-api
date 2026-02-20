@@ -7,6 +7,7 @@ import com.gxcj.entity.query.InterviewQuery;
 import com.gxcj.entity.query.TalentQuery;
 import com.gxcj.entity.vo.DeliveryVo;
 import com.gxcj.entity.vo.InterviewVo;
+import com.gxcj.entity.vo.StudentResumeVo;
 import com.gxcj.result.PageResult;
 
 import java.util.Map;
@@ -21,7 +22,7 @@ public interface DeliveryService {
     /**
      * 获取简历详情
      */
-    StudentResumeEntity getResumeDetail(String resumeId, String userId);
+    StudentResumeVo getResumeDetail(String resumeId, String userId);
     
     /**
      * 安排面试
@@ -67,4 +68,9 @@ public interface DeliveryService {
      * 发放Offer
      */
     void sendOffer(CompanyDeliveryController.SendOfferReq req, String userId);
+    
+    /**
+     * 归档候选人（面试不通过）
+     */
+    void archiveCandidate(String deliveryId, String userId);
 }

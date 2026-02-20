@@ -5,6 +5,7 @@ import com.gxcj.entity.JobEntity;
 import com.gxcj.entity.StudentResumeEntity;
 import com.gxcj.entity.query.DeliveryQuery;
 import com.gxcj.entity.vo.DeliveryVo;
+import com.gxcj.entity.vo.StudentResumeVo;
 import com.gxcj.result.PageResult;
 import com.gxcj.result.Result;
 import com.gxcj.service.DeliveryService;
@@ -50,8 +51,8 @@ public class CompanyDeliveryController {
      */
     @GetMapping("/resume/detail/{resumeId}")
     @PreAuthorize("hasRole('ROLE_COMPANY')")
-    public Result<StudentResumeEntity> getResumeDetail(@PathVariable("resumeId") String resumeId) {
-        StudentResumeEntity resume = deliveryService.getResumeDetail(resumeId, UserContext.getUserId());
+    public Result<StudentResumeVo> getResumeDetail(@PathVariable("resumeId") String resumeId) {
+        StudentResumeVo resume = deliveryService.getResumeDetail(resumeId, UserContext.getUserId());
         return Result.success(resume);
     }
 
@@ -192,10 +193,20 @@ public class CompanyDeliveryController {
     /**
      * 12. 发放Offer
      */
-    @PostMapping("/offer/send")
+    @PostMapping("/interview/offer")
     @PreAuthorize("hasRole('ROLE_COMPANY')")
     public Result<Void> sendOffer(@RequestBody @Valid SendOfferReq req) {
         deliveryService.sendOffer(req, UserContext.getUserId());
+        return Result.success();
+    }
+
+    /**
+     * 13. 归档候选人（面试不通过）
+     */
+    @PostMapping("/interview/archive")
+    @PreAuthorize("hasRole('ROLE_COMPANY')")
+    public Result<Void> archiveCandidate(@RequestBody @Valid ArchiveCandidateReq req) {
+        deliveryService.archiveCandidate(req.getDeliveryId(), UserContext.getUserId());
         return Result.success();
     }
 
@@ -251,5 +262,11 @@ public class CompanyDeliveryController {
         private String salary;
 
         private String notes;
+    }
+
+    @Data
+    public static class ArchiveCandidateReq {
+        @NotBlank(message = "投递记录ID不能为空")
+        private String deliveryId;
     }
 }

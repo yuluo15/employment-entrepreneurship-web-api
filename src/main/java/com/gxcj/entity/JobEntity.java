@@ -10,7 +10,7 @@ import lombok.Data;
 import java.sql.Timestamp;
 
 @Data
-@TableName("biz_job")
+@TableName(value = "biz_job", autoResultMap = true)
 public class JobEntity {
     @TableId(value = "job_id")
     private String id;
