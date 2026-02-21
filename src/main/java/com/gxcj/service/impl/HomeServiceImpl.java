@@ -5,12 +5,17 @@ import com.gxcj.entity.*;
 import com.gxcj.entity.vo.HomeOverviewVo;
 import com.gxcj.mapper.*;
 import com.gxcj.service.HomeService;
+import com.gxcj.stutas.DictTypeEnum;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -36,11 +41,15 @@ public class HomeServiceImpl implements HomeService {
     
     @Autowired
     private HomeMapper homeMapper;
+    @Autowired
+    private DictDataMapper dictDataMapper;
 
     @Override
     public HomeOverviewVo getOverview() {
         log.info("开始获取首页概览数据");
-        
+        Map<String, String> map = dictDataMapper.selectList(new LambdaQueryWrapper<DictDataEntity>()
+                .eq(DictDataEntity::getDictType, DictTypeEnum.sys_industry)).stream().collect(Collectors.toMap(DictDataEntity::getDictValue, DictDataEntity::getDictLabel, (x, y) -> x));
+
         // 1. 核心指标统计
         Integer schoolCount = getSchoolCount();
         Integer companyCount = getCompanyCount();
@@ -57,7 +66,13 @@ public class HomeServiceImpl implements HomeService {
         
         // 4. 最新入驻企业
         List<HomeOverviewVo.LatestCompanyItem> latestCompanies = homeMapper.getLatestCompanies();
-        
+        List<HomeOverviewVo.LatestCompanyItem> list = latestCompanies.stream().map(latestCompanyItem -> {
+            HomeOverviewVo.LatestCompanyItem latestCompanyItem1 = new HomeOverviewVo.LatestCompanyItem();
+            BeanUtils.copyProperties(latestCompanyItem, latestCompanyItem1);
+            latestCompanyItem1.setIndustry(String.join(",", Arrays.stream(latestCompanyItem.getIndustry().split(","))
+                    .filter(map::containsKey).map(map::get).toList()));
+            return latestCompanyItem1;
+        }).toList();
         // 组装返回数据
         return HomeOverviewVo.builder()
                 .schoolCount(schoolCount)
@@ -68,7 +83,7 @@ public class HomeServiceImpl implements HomeService {
                 .pendingProjects(pendingProjects)
                 .schoolRank(schoolRank != null ? schoolRank : new ArrayList<>())
                 .domainDistribution(domainDistribution != null ? domainDistribution : new ArrayList<>())
-                .latestCompanies(latestCompanies != null ? latestCompanies : new ArrayList<>())
+                .latestCompanies(list)
                 .build();
     }
 

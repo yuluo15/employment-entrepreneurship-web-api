@@ -1,16 +1,24 @@
 package com.gxcj.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.gxcj.entity.DictDataEntity;
 import com.gxcj.entity.vo.EmploymentStatsVo;
+import com.gxcj.mapper.DictDataMapper;
 import com.gxcj.mapper.EmploymentStatsMapper;
 import com.gxcj.service.EmploymentStatsService;
+import com.gxcj.stutas.DictTypeEnum;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -18,11 +26,16 @@ public class EmploymentStatsServiceImpl implements EmploymentStatsService {
 
     @Autowired
     private EmploymentStatsMapper employmentStatsMapper;
+    @Autowired
+    private DictDataMapper dictDataMapper;
 
     @Override
     public EmploymentStatsVo getEmploymentStats(Integer graduationYear) {
         log.info("开始统计{}年就业数据", graduationYear);
-        
+        List<DictDataEntity> list = dictDataMapper.selectList(new LambdaQueryWrapper<DictDataEntity>()
+                .eq(DictDataEntity::getDictType, DictTypeEnum.sys_industry));
+        Map<String, String> map = list.stream().collect(Collectors.toMap(DictDataEntity::getDictValue, DictDataEntity::getDictLabel, (x, y) -> x));
+
         // 1. 获取KPI指标
         EmploymentStatsVo.KpiData kpi = getKpiData(graduationYear);
         
@@ -40,7 +53,14 @@ public class EmploymentStatsServiceImpl implements EmploymentStatsService {
         // 5. 获取热门行业
         List<EmploymentStatsVo.IndustryItem> hotIndustries = 
                 employmentStatsMapper.getHotIndustries(graduationYear);
-        
+        List<EmploymentStatsVo.IndustryItem> industryItemList = hotIndustries.stream().map(item -> {
+            EmploymentStatsVo.IndustryItem industryItem = new EmploymentStatsVo.IndustryItem();
+            BeanUtils.copyProperties(item, industryItem);
+            industryItem.setIndustry(String.join(",", Arrays.stream(item.getIndustry().split(","))
+                    .filter(map::containsKey).map(map::get).toList()));
+            return industryItem;
+        }).toList();
+
         // 6. 获取创业项目统计
         EmploymentStatsVo.EntrepreneurshipData entrepreneurship = getEntrepreneurshipData();
         
@@ -50,7 +70,7 @@ public class EmploymentStatsServiceImpl implements EmploymentStatsService {
                 .schoolRank(schoolRank != null ? schoolRank : new ArrayList<>())
                 .employmentStatus(employmentStatus != null ? employmentStatus : new ArrayList<>())
                 .salaryDistribution(salaryDistribution != null ? salaryDistribution : new ArrayList<>())
-                .hotIndustries(hotIndustries != null ? hotIndustries : new ArrayList<>())
+                .hotIndustries(industryItemList)
                 .entrepreneurship(entrepreneurship)
                 .build();
     }
@@ -104,9 +124,9 @@ public class EmploymentStatsServiceImpl implements EmploymentStatsService {
                 employmentStatsMapper.getDomainDistribution();
         
         return EmploymentStatsVo.EntrepreneurshipData.builder()
-                .totalProjects(getIntValue(statsMap, "totalProjects"))
-                .approvedProjects(getIntValue(statsMap, "approvedProjects"))
-                .pendingProjects(getIntValue(statsMap, "pendingProjects"))
+                .totalProjects(getIntValue(statsMap, "totalprojects"))
+                .approvedProjects(getIntValue(statsMap, "approvedprojects"))
+                .pendingProjects(getIntValue(statsMap, "pendingprojects"))
                 .domainDistribution(domainDistribution != null ? domainDistribution : new ArrayList<>())
                 .build();
     }

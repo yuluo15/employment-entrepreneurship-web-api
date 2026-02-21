@@ -21,6 +21,7 @@ public class JobAuditVo {
     private String description;
     private String requirement;
     private Integer audit;
+    private Integer status;
     private Integer viewCount;
     private String hrId;
     private String hrName;

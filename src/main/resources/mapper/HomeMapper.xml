@@ -18,16 +18,34 @@
 
     <!-- 获取创业领域分布 -->
     <select id="getDomainDistribution" resultType="com.gxcj.entity.vo.HomeOverviewVo$DomainDistributionItem">
-        SELECT 
-            p.domain as domain,
-            COALESCE(d.dict_label, p.domain) as domainLabel,
-            COUNT(*) as count
-        FROM biz_project p
-        LEFT JOIN sys_dict_data d ON p.domain = d.dict_value AND d.dict_type = 'sys_project_domain'
-        WHERE p.domain IS NOT NULL AND p.domain != ''
-        GROUP BY p.domain, d.dict_label
+        WITH ProjectDomains AS (
+            -- 第一步：将逗号分隔的字符串拆分成多行
+            SELECT unnest(string_to_array(domain, ',')) AS single_domain
+            FROM biz_project
+            WHERE domain IS NOT NULL AND domain != ''
+            )
+        -- 第二步：按拆分后的独立领域进行关联和统计
+        SELECT
+            pd.single_domain AS domain,
+        COALESCE(d.dict_label, pd.single_domain) AS domainLabel,
+        COUNT(*) AS count
+        FROM ProjectDomains pd
+            LEFT JOIN sys_dict_data d
+        ON pd.single_domain = d.dict_value AND d.dict_type = 'sys_project_domain'
+        GROUP BY pd.single_domain, d.dict_label
         ORDER BY count DESC
     </select>
+<!--    <select id="getDomainDistribution" resultType="com.gxcj.entity.vo.HomeOverviewVo$DomainDistributionItem">-->
+<!--        SELECT -->
+<!--            p.domain as domain,-->
+<!--            COALESCE(d.dict_label, p.domain) as domainLabel,-->
+<!--            COUNT(*) as count-->
+<!--        FROM biz_project p-->
+<!--        LEFT JOIN sys_dict_data d ON p.domain = d.dict_value AND d.dict_type = 'sys_project_domain'-->
+<!--        WHERE p.domain IS NOT NULL AND p.domain != ''-->
+<!--        GROUP BY p.domain, d.dict_label-->
+<!--        ORDER BY count DESC-->
+<!--    </select>-->
 
     <!-- 获取最新入驻企业 -->
     <select id="getLatestCompanies" resultType="com.gxcj.entity.vo.HomeOverviewVo$LatestCompanyItem">

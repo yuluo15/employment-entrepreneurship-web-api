@@ -266,9 +266,9 @@ public class SchoolStudentServiceImpl implements SchoolStudentService {
                     UserEntity user = new UserEntity();
                     user.setId(EntityHelper.uuid());
                     user.setLoginIdentity(dto.getStudentNo());
-                    user.setPassword(DigestUtils.md5DigestAsHex("123456".getBytes()));
+                    user.setPassword(EntityHelper.encodedPassword("123456"));
                     user.setRealName(dto.getStudentName());
-                    user.setRoleKey("ROLE_STUDENT");
+                    user.setRoleKey("4");
                     user.setOwnerId(schoolId);
                     user.setStatus(1);
                     user.setGender("男".equals(dto.getGender()) ? 1 : 2);
@@ -288,12 +288,13 @@ public class SchoolStudentServiceImpl implements SchoolStudentService {
                     student.setCollegeName(dto.getCollegeName());
                     student.setMajorName(dto.getMajorName());
                     student.setClassName(dto.getClassName());
-                    student.setEducation(dto.getEducation());
+//                    student.setEducation(dto.getEducation() == "本科"? "BACHELOR" : "2");
+                    student.setEducation("BACHELOR");
                     student.setEnrollmentYear(dto.getEnrollmentYear());
                     student.setGraduationYear(dto.getGraduationYear());
                     student.setPhone(dto.getPhone());
                     student.setEmail(dto.getEmail());
-                    student.setEmploymentStatus("0");
+                    student.setEmploymentStatus("UNEMPLOYED");
                     student.setCreateTime(EntityHelper.now());
                     student.setUpdateTime(EntityHelper.now());
                     studentMapper.insert(student);

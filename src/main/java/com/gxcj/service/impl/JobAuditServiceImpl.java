@@ -41,7 +41,8 @@ public class JobAuditServiceImpl implements JobAuditService {
                 .in(DictDataEntity::getDictType, 
                     DictTypeEnum.sys_salary_range.name(), 
                     DictTypeEnum.sys_education.name(),
-                    DictTypeEnum.sys_welfare));
+                    DictTypeEnum.sys_welfare.name(),
+                    DictTypeEnum.sys_industry.name()));
         Map<String, String> dictMap = dictList.stream()
                 .collect(Collectors.toMap(DictDataEntity::getDictValue, DictDataEntity::getDictLabel, (x, y) -> x));
 
@@ -87,6 +88,7 @@ public class JobAuditServiceImpl implements JobAuditService {
             vo.setDescription(job.getDescription());
             vo.setRequirement(job.getRequirement());
             vo.setAudit(job.getAudit());
+            vo.setStatus(job.getStatus());
             vo.setViewCount(job.getViewCount());
             vo.setContactPhone(job.getContactPhone());
             vo.setReason(job.getReason());
@@ -99,7 +101,8 @@ public class JobAuditServiceImpl implements JobAuditService {
                     vo.setCompanyId(company.getId());
                     vo.setCompanyName(company.getName());
                     vo.setCompanyLogo(company.getLogo());
-                    vo.setCompanyIndustry(company.getIndustry());
+                    vo.setCompanyIndustry(String.join(",", Arrays.stream(company.getIndustry().split(","))
+                            .filter(dictMap::containsKey).map(dictMap::get).toList()));
                     vo.setLocation(company.getAddress());
                 }
             }
