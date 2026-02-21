@@ -59,13 +59,12 @@ public class StudentNoticeServiceImpl implements StudentNoticeService {
         // 权限控制：学生可见的通知
         final String finalSchoolId = studentSchoolId;
         wrapper.and(w -> w
-                .eq(NoticeEntity::getTargetAudience, "ALL")
-                .or()
-                .eq(NoticeEntity::getTargetAudience, "STUDENT")
-                .or(finalSchoolId != null, subWrapper -> subWrapper
-                        .eq(NoticeEntity::getTargetAudience, "SCHOOL")
-                        .eq(NoticeEntity::getPublisherId, finalSchoolId)
-                )
+                // 管理员发布的面向学生的公告
+                .or(w1 -> w1.eq(NoticeEntity::getPublisherType, "admin")
+                           .in(NoticeEntity::getTargetAudience, "all", "student"))
+                // 本校发布的公告
+                .or(finalSchoolId != null, w2 -> w2.eq(NoticeEntity::getPublisherType, "school")
+                                                    .eq(NoticeEntity::getPublisherId, finalSchoolId))
         );
 
         wrapper.orderByDesc(NoticeEntity::getIsTop);
@@ -76,7 +75,7 @@ public class StudentNoticeServiceImpl implements StudentNoticeService {
 
         // 批量查询学校信息
         List<String> schoolIds = noticeList.stream()
-                .filter(n -> "SCHOOL".equals(n.getPublisherType()) && StringUtils.hasText(n.getPublisherId()))
+                .filter(n -> "school".equals(n.getPublisherType()) && StringUtils.hasText(n.getPublisherId()))
                 .map(NoticeEntity::getPublisherId)
                 .distinct()
                 .collect(Collectors.toList());
@@ -113,6 +112,18 @@ public class StudentNoticeServiceImpl implements StudentNoticeService {
     @Override
     @Transactional
     public StudentNoticeDetailVo getNoticeDetail(String noticeId) {
+        String userId = UserContext.getUserId();
+        
+        // 查询学生信息获取学校ID
+        LambdaQueryWrapper<StudentEntity> studentWrapper = new LambdaQueryWrapper<>();
+        studentWrapper.eq(StudentEntity::getUserId, userId);
+        StudentEntity student = studentMapper.selectOne(studentWrapper);
+
+        String studentSchoolId = null;
+        if (student != null) {
+            studentSchoolId = student.getSchoolId();
+        }
+        
         NoticeEntity notice = noticeMapper.selectById(noticeId);
         if (notice == null) {
             throw new BusinessException("通知不存在");
@@ -121,6 +132,24 @@ public class StudentNoticeServiceImpl implements StudentNoticeService {
         if (notice.getStatus() != 1) {
             throw new BusinessException("通知未发布");
         }
+        
+        // 权限验证：学生只能查看管理员发布的面向学生的公告，或本校发布的公告
+        boolean hasPermission = false;
+        if ("admin".equals(notice.getPublisherType())) {
+            // 管理员发布的公告，target_audience 为 'all' 或 'student'
+            if ("all".equals(notice.getTargetAudience()) || "student".equals(notice.getTargetAudience())) {
+                hasPermission = true;
+            }
+        } else if ("school".equals(notice.getPublisherType())) {
+            // 学校发布的公告，必须是本校
+            if (studentSchoolId != null && studentSchoolId.equals(notice.getPublisherId())) {
+                hasPermission = true;
+            }
+        }
+        
+        if (!hasPermission) {
+            throw new BusinessException("无权查看该通知");
+        }
 
         // 浏览次数+1
         notice.setViewCount(notice.getViewCount() == null ? 1 : notice.getViewCount() + 1);
@@ -128,9 +157,9 @@ public class StudentNoticeServiceImpl implements StudentNoticeService {
 
         // 查询学校名称
         String publisherName = "未知";
-        if ("ADMIN".equals(notice.getPublisherType())) {
+        if ("admin".equals(notice.getPublisherType())) {
             publisherName = "省教育厅";
-        } else if ("SCHOOL".equals(notice.getPublisherType()) && StringUtils.hasText(notice.getPublisherId())) {
+        } else if ("school".equals(notice.getPublisherType()) && StringUtils.hasText(notice.getPublisherId())) {
             SchoolEntity school = schoolMapper.selectById(notice.getPublisherId());
             if (school != null) {
                 publisherName = school.getName();
@@ -169,13 +198,12 @@ public class StudentNoticeServiceImpl implements StudentNoticeService {
         // 权限控制：学生可见的通知
         final String finalSchoolId = studentSchoolId;
         wrapper.and(w -> w
-                .eq(NoticeEntity::getTargetAudience, "ALL")
-                .or()
-                .eq(NoticeEntity::getTargetAudience, "STUDENT")
-                .or(finalSchoolId != null, subWrapper -> subWrapper
-                        .eq(NoticeEntity::getTargetAudience, "SCHOOL")
-                        .eq(NoticeEntity::getPublisherId, finalSchoolId)
-                )
+                // 管理员发布的面向学生的公告
+                .or(w1 -> w1.eq(NoticeEntity::getPublisherType, "admin")
+                           .in(NoticeEntity::getTargetAudience, "all", "student"))
+                // 本校发布的公告
+                .or(finalSchoolId != null, w2 -> w2.eq(NoticeEntity::getPublisherType, "school")
+                                                    .eq(NoticeEntity::getPublisherId, finalSchoolId))
         );
 
         // 类型筛选
@@ -196,7 +224,7 @@ public class StudentNoticeServiceImpl implements StudentNoticeService {
 
         // 批量查询学校信息
         List<String> schoolIds = result.getRecords().stream()
-                .filter(n -> "SCHOOL".equals(n.getPublisherType()) && StringUtils.hasText(n.getPublisherId()))
+                .filter(n -> "school".equals(n.getPublisherType()) && StringUtils.hasText(n.getPublisherId()))
                 .map(NoticeEntity::getPublisherId)
                 .distinct()
                 .collect(Collectors.toList());
@@ -249,9 +277,9 @@ public class StudentNoticeServiceImpl implements StudentNoticeService {
     }
 
     private String getPublisherName(NoticeEntity notice, Map<String, String> schoolNameMap) {
-        if ("ADMIN".equals(notice.getPublisherType())) {
+        if ("admin".equals(notice.getPublisherType())) {
             return "省教育厅";
-        } else if ("SCHOOL".equals(notice.getPublisherType()) && StringUtils.hasText(notice.getPublisherId())) {
+        } else if ("school".equals(notice.getPublisherType()) && StringUtils.hasText(notice.getPublisherId())) {
             if (schoolNameMap != null && schoolNameMap.containsKey(notice.getPublisherId())) {
                 return schoolNameMap.get(notice.getPublisherId());
             }

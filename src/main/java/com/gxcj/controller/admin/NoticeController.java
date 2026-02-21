@@ -44,7 +44,7 @@ public class NoticeController {
         notice.setNoticeTitle(req.getNoticeTitle());
         notice.setNoticeType(req.getNoticeType());
         notice.setNoticeContent(req.getNoticeContent());
-//        notice.setAttachments(req.getAttachments());
+        notice.setTargetAudience(req.getTargetAudience());
         notice.setIsTop(req.getIsTop() != null ? req.getIsTop() : 0);
         notice.setStatus(req.getStatus() != null ? req.getStatus() : 0);
         
@@ -63,7 +63,7 @@ public class NoticeController {
         notice.setNoticeTitle(req.getNoticeTitle());
         notice.setNoticeType(req.getNoticeType());
         notice.setNoticeContent(req.getNoticeContent());
-//        notice.setAttachments(req.getAttachments());
+        notice.setTargetAudience(req.getTargetAudience());
         notice.setIsTop(req.getIsTop());
         notice.setStatus(req.getStatus());
         
@@ -125,7 +125,9 @@ public class NoticeController {
         @NotBlank(message = "内容不能为空")
         private String noticeContent;
 
-        private String attachments;
+        @NotBlank(message = "目标受众不能为空")
+        private String targetAudience;  // 'all' 或 'student'
+
         private Integer isTop;
         private Integer status;
     }
@@ -144,7 +146,9 @@ public class NoticeController {
         @NotBlank(message = "内容不能为空")
         private String noticeContent;
 
-        private String attachments;
+        @NotBlank(message = "目标受众不能为空")
+        private String targetAudience;  // 'all' 或 'student'
+
         private Integer isTop;
         private Integer status;
     }

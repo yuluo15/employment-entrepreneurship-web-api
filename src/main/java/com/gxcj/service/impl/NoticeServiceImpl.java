@@ -45,6 +45,10 @@ public class NoticeServiceImpl implements NoticeService {
         // 生成ID
         notice.setNoticeId(EntityHelper.uuid());
         
+        // 设置发布者信息（管理员发布）
+        notice.setPublisherType("admin");
+        notice.setPublisherId(null);
+        
         // 设置创建信息
         notice.setCreateBy(UserContext.getUserId());
         notice.setCreateTime(EntityHelper.now());

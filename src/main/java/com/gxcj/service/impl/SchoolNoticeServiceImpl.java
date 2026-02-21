@@ -105,6 +105,9 @@ public class SchoolNoticeServiceImpl implements SchoolNoticeService {
         // 学校发布的公告不支持置顶
         notice.setIsTop(0);
         
+        // 学校发布的公告固定为 student（本校学生和教师都能看）
+        notice.setTargetAudience("student");
+        
         // 如果是直接发布，设置发布时间
         if (notice.getStatus() != null && notice.getStatus() == 1) {
             notice.setPublishTime(EntityHelper.now());
@@ -113,11 +116,6 @@ public class SchoolNoticeServiceImpl implements SchoolNoticeService {
         // 设置默认值
         if (notice.getStatus() == null) {
             notice.setStatus(0); // 默认草稿
-        }
-        
-        // 设置默认目标受众
-        if (StringUtils.isBlank(notice.getTargetAudience())) {
-            notice.setTargetAudience("student"); // 默认学生可见
         }
         
         noticeMapper.insert(notice);
@@ -145,6 +143,9 @@ public class SchoolNoticeServiceImpl implements SchoolNoticeService {
         
         // 学校发布的公告不支持置顶
         notice.setIsTop(0);
+        
+        // 学校发布的公告固定为 student
+        notice.setTargetAudience("student");
         
         // 如果从草稿改为发布，且之前没有发布时间，则设置发布时间
         if (notice.getStatus() != null && notice.getStatus() == 1 

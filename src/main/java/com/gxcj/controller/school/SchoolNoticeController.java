@@ -55,7 +55,6 @@ public class SchoolNoticeController {
         notice.setNoticeTitle(req.getNoticeTitle());
         notice.setNoticeType(req.getNoticeType());
         notice.setNoticeContent(req.getNoticeContent());
-        notice.setTargetAudience(req.getTargetAudience());
         notice.setStatus(req.getStatus() != null ? req.getStatus() : 0);
         
         schoolNoticeService.add(notice, userId);
@@ -77,7 +76,6 @@ public class SchoolNoticeController {
         notice.setNoticeTitle(req.getNoticeTitle());
         notice.setNoticeType(req.getNoticeType());
         notice.setNoticeContent(req.getNoticeContent());
-        notice.setTargetAudience(req.getTargetAudience());
         notice.setStatus(req.getStatus());
         
         schoolNoticeService.update(notice, userId);
@@ -139,9 +137,6 @@ public class SchoolNoticeController {
         @NotBlank(message = "内容不能为空")
         private String noticeContent;
 
-        @NotBlank(message = "目标受众不能为空")
-        private String targetAudience;
-
         private Integer status;
     }
 
@@ -158,9 +153,6 @@ public class SchoolNoticeController {
 
         @NotBlank(message = "内容不能为空")
         private String noticeContent;
-
-        @NotBlank(message = "目标受众不能为空")
-        private String targetAudience;
 
         private Integer status;
     }
