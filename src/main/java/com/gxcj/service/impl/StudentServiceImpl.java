@@ -110,6 +110,7 @@ public class StudentServiceImpl implements StudentService {
                 .eq(CollectionEntity::getUserId, UserContext.getUserId())).intValue());
 
         vo.setOfferCount(jobDeliveryMapper.selectCount(new LambdaQueryWrapper<JobDeliveryEntity>()
+                .eq(JobDeliveryEntity::getStudentId, studentId)
                 .eq(JobDeliveryEntity::getStatus, JobDeliveryStatusEnum.OFFER.getValue())).intValue());
 
         StudentResumeEntity resume = studentResumeMapper.selectOne(new LambdaQueryWrapper<StudentResumeEntity>()

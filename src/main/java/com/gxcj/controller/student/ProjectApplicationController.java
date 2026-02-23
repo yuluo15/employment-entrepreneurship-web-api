@@ -55,7 +55,7 @@ public class ProjectApplicationController {
         return Result.success(result);
     }
 
-    @PutMapping("/apply/{applicationId}/handle")
+    @PutMapping("/application/{applicationId}/handle")
     @PreAuthorize("hasRole('ROLE_STUDENT')")
     public Result<Void> handleApplication(
             @PathVariable String applicationId,

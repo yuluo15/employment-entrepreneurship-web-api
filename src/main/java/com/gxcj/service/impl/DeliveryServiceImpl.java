@@ -318,11 +318,25 @@ public class DeliveryServiceImpl implements DeliveryService {
         delivery.setStatus(JobDeliveryStatusEnum.INTERVIEW.getValue());
         delivery.setUpdateTime(EntityHelper.now());
         jobDeliveryMapper.updateById(delivery);
+        JobEntity jobEntity = jobMapper.selectById(delivery.getJobId());
 
-        // 9. 发送消息通知学生
-        sendMessage(delivery.getStudentId(), "面试通知", 
-                String.format("您投递的职位已安排面试，面试时间：%s", req.getInterviewTime()),
-                2, interview.getId());
+        if (req.getType().equals("1")){
+            sendMessage(delivery.getStudentId(), "面试通知",
+                    String.format("您投递的 %s 职位已安排面试，面试时间：%s，面试方式：现场面试，面试地点：%s", jobEntity.getJobName() ,req.getInterviewTime(), req.getLocation()),
+                    2, interview.getId());
+        } else if (req.getType().equals("2")) {
+            sendMessage(delivery.getStudentId(), "面试通知",
+                    String.format("您投递的 %s 职位已安排面试，面试时间：%s，面试方式：视频面试，视频链接：%s", jobEntity.getJobName() ,req.getInterviewTime(), req.getLocation()),
+                    2, interview.getId());
+        } else {
+            sendMessage(delivery.getStudentId(), "面试通知",
+                    String.format("您投递的%s职位已安排面试，面试时间：%s，面试方式：电话面试", jobEntity.getJobName() ,req.getInterviewTime()),
+                    2, interview.getId());
+        }
+//        // 9. 发送消息通知学生
+//        sendMessage(delivery.getStudentId(), "面试通知",
+//                String.format("您投递的%s职位已安排面试，面试时间：%s，面试地点：%s", jobEntity.getJobName() ,req.getInterviewTime(), req.getLocation()),
+//                2, interview.getId());
 
         return interview.getId();
     }
