@@ -42,7 +42,9 @@ public class StudentMessageController {
         MessageQuery query = new MessageQuery();
         query.setPageNum(pageNum);
         query.setPageSize(pageSize);
-        query.setType(type);
+        if (type != null && type != 0){
+            query.setType(type);
+        }
         query.setIsRead(isRead);
         query.setReceiverId(studentId);
 

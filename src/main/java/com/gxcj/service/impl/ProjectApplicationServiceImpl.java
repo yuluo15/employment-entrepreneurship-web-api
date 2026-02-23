@@ -3,6 +3,7 @@ package com.gxcj.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.gxcj.context.UserContext;
+import com.gxcj.entity.MessageEntity;
 import com.gxcj.entity.ProjectApplicationEntity;
 import com.gxcj.entity.ProjectEntity;
 import com.gxcj.entity.SchoolEntity;
@@ -13,6 +14,7 @@ import com.gxcj.entity.dto.ProjectApplicationHandleDto;
 import com.gxcj.entity.vo.ProjectApplicantVo;
 import com.gxcj.entity.vo.ProjectApplicationVo;
 import com.gxcj.exception.BusinessException;
+import com.gxcj.mapper.MessageMapper;
 import com.gxcj.mapper.ProjectApplicationMapper;
 import com.gxcj.mapper.ProjectMapper;
 import com.gxcj.mapper.SchoolMapper;
@@ -51,6 +53,9 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
 
     @Autowired
     private SchoolMapper schoolMapper;
+
+    @Autowired
+    private MessageMapper messageMapper;
 
     @Override
     @Transactional
@@ -112,7 +117,17 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
             throw new BusinessException("您已经申请过该项目");
         }
 
-        // TODO: 发送系统消息通知项目负责人
+        // 发送系统消息通知项目负责人
+        MessageEntity message = new MessageEntity();
+        message.setId(EntityHelper.uuid());
+        message.setReceiverId(project.getUserId());
+        message.setTitle("新的项目申请");
+        message.setContent("学生 " + student.getStudentName() + " 申请加入您的项目《" + project.getProjectName() + "》");
+        message.setType(1); // 系统通知
+        message.setIsRead(0); // 未读
+        message.setRefId(application.getId());
+        message.setCreateTime(EntityHelper.now());
+        messageMapper.insert(message);
 
         Map<String, String> result = new HashMap<>();
         result.put("applicationId", application.getId());
@@ -320,6 +335,27 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
         application.setUpdateTime(EntityHelper.now());
         projectApplicationMapper.updateById(application);
 
-        // TODO: 发送系统消息通知申请人
+        // 发送系统消息通知申请人
+        // 查询申请人的userId
+        StudentEntity applicant = studentMapper.selectById(application.getApplicantId());
+        if (applicant != null && applicant.getUserId() != null) {
+            MessageEntity message = new MessageEntity();
+            message.setId(EntityHelper.uuid());
+            message.setReceiverId(applicant.getUserId());
+            
+            if ("APPROVE".equals(dto.getAction())) {
+                message.setTitle("项目申请已通过");
+                message.setContent("您申请加入的项目《" + project.getProjectName() + "》已通过审核");
+            } else {
+                message.setTitle("项目申请未通过");
+                message.setContent("您申请加入的项目《" + project.getProjectName() + "》未通过审核");
+            }
+            
+            message.setType(1); // 系统通知
+            message.setIsRead(0); // 未读
+            message.setRefId(applicationId);
+            message.setCreateTime(EntityHelper.now());
+            messageMapper.insert(message);
+        }
     }
 }

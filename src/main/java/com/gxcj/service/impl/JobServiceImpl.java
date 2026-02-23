@@ -127,6 +127,7 @@ public class JobServiceImpl implements JobService {
             return new PageResult<>(page.getTotal(), list);
         } else if (type.equals(SearchTypeEnum.PROJECT.name())) {
             Page<ProjectEntity> projectEntityPage = projectMapper.selectPage(new Page<>(req.getPageNum(), req.getPageSize()), new LambdaQueryWrapper<ProjectEntity>()
+                    .in(ProjectEntity::getStatus, "1", "3")
                     .like(StringUtils.isNotBlank(req.getKeyword()), ProjectEntity::getProjectName, req.getKeyword()));
             List<String> schoolIds = projectEntityPage.getRecords().stream().map(ProjectEntity::getSchoolId).toList();
             List<SchoolEntity> schoolEntities = schoolMapper.selectByIds(schoolIds);
