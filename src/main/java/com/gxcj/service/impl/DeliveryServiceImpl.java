@@ -27,10 +27,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -74,8 +71,9 @@ public class DeliveryServiceImpl implements DeliveryService {
                 .eq(JobDeliveryEntity::getCompanyId, hrEntity.getCompanyId())
                 .eq(StringUtils.isNotEmpty(query.getJobId()), 
                     JobDeliveryEntity::getJobId, query.getJobId())
-                .eq(StringUtils.isNotEmpty(query.getStatus()), 
-                    JobDeliveryEntity::getStatus, query.getStatus())
+//                .eq(StringUtils.isNotEmpty(query.getStatus()),
+//                    JobDeliveryEntity::getStatus, query.getStatus())
+                .in(JobDeliveryEntity::getStatus, JobDeliveryStatusEnum.DELIVERED.getValue(),JobDeliveryStatusEnum.VIEWED.getValue())
                 .orderByDesc(JobDeliveryEntity::getCreateTime);
 
         // 3. 日期范围查询
@@ -218,9 +216,10 @@ public class DeliveryServiceImpl implements DeliveryService {
         if (resume == null) {
             throw new BusinessException("简历不存在");
         }
-        UserEntity userEntity = userMapper.selectById(userId);
-        StudentEntity studentEntity = studentMapper.selectOne(new LambdaQueryWrapper<StudentEntity>()
-                .eq(StudentEntity::getUserId, userId));
+//        UserEntity userEntity = userMapper.selectById(userId);
+//        StudentEntity studentEntity = studentMapper.selectOne(new LambdaQueryWrapper<StudentEntity>()
+//                .eq(StudentEntity::getUserId, userId));
+        StudentEntity studentEntity = studentMapper.selectById(resume.getStudentId());
         SchoolEntity schoolEntity = schoolMapper.selectById(studentEntity.getSchoolId());
 
         StudentResumeVo resumeVo = new StudentResumeVo();
@@ -228,7 +227,7 @@ public class DeliveryServiceImpl implements DeliveryService {
         resumeVo.setStudentName(studentEntity.getStudentName());
         resumeVo.setStudentPhone(studentEntity.getPhone());
         resumeVo.setEmail(studentEntity.getEmail());
-        resumeVo.setGender(userEntity.getGender());
+        resumeVo.setGender(Integer.valueOf(studentEntity.getGender()));
         resumeVo.setSchool(schoolEntity.getName());
         resumeVo.setMajor(studentEntity.getMajorName());
         resumeVo.setGraduationYear(studentEntity.getGraduationYear().toString());
@@ -294,17 +293,18 @@ public class DeliveryServiceImpl implements DeliveryService {
         interview.setHrId(hrEntity.getHrId());
         interview.setInterviewTime(Timestamp.valueOf(interviewTime));
         interview.setDuration(req.getDuration());
+        interview.setType(Integer.parseInt(req.getType()));
         
-        // 转换面试方式
-        if ("ONSITE".equals(req.getType())) {
-            interview.setType(1);
-        } else if ("VIDEO".equals(req.getType())) {
-            interview.setType(2);
-        } else if ("PHONE".equals(req.getType())) {
-            interview.setType(3);
-        } else {
-            throw new BusinessException("面试方式不正确");
-        }
+//        // 转换面试方式
+//        if ("ONSITE".equals(req.getType())) {
+//            interview.setType(1);
+//        } else if ("VIDEO".equals(req.getType())) {
+//            interview.setType(2);
+//        } else if ("PHONE".equals(req.getType())) {
+//            interview.setType(3);
+//        } else {
+//            throw new BusinessException("面试方式不正确");
+//        }
         
         interview.setLocation(req.getLocation());
         interview.setNotes(req.getNotes());
@@ -375,6 +375,8 @@ public class DeliveryServiceImpl implements DeliveryService {
         LambdaQueryWrapper<InterviewEntity> wrapper = new LambdaQueryWrapper<InterviewEntity>()
                 .eq(InterviewEntity::getCompanyId, hrEntity.getCompanyId())
                 .eq(query.getStatus() != null, InterviewEntity::getStatus, query.getStatus())
+                .inSql(InterviewEntity::getDeliveryId,
+                        "SELECT id FROM biz_job_delivery WHERE status != '" + JobDeliveryStatusEnum.OFFER.getValue() + "'")
                 .orderByDesc(InterviewEntity::getInterviewTime);
 
         // 3. 日期范围查询

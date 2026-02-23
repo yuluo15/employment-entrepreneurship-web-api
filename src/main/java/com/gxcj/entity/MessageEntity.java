@@ -37,7 +37,7 @@ public class MessageEntity {
     private String content;
 
     /**
-     * 消息类型 (1:系统通知, 2:面试通知, 3:投递反馈)
+     * 消息类型 (1:系统通知, 2:面试通知, 3:offer通知)
      */
     private Integer type;
 
