@@ -28,4 +28,9 @@ public interface SchoolTeacherService {
      * 批量导入教师
      */
     SchoolTeacherImportResultVo importTeachers(MultipartFile file, String userId);
+    
+    /**
+     * 导出教师数据
+     */
+    void exportTeacherData(SchoolTeacherQuery query, String userId, HttpServletResponse response);
 }

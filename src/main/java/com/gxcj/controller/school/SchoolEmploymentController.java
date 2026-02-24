@@ -8,6 +8,7 @@ import com.gxcj.entity.vo.school.SchoolEmploymentVo;
 import com.gxcj.result.PageResult;
 import com.gxcj.result.Result;
 import com.gxcj.service.SchoolEmploymentService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -58,5 +59,25 @@ public class SchoolEmploymentController {
         String userId = UserContext.getUserId();
         SchoolEmploymentStatsVo stats = employmentService.getEmploymentStats(query, userId);
         return Result.success(stats);
+    }
+
+    /**
+     * 导出就业数据
+     */
+    @GetMapping("/export")
+    public void exportEmploymentData(
+            @RequestParam(required = false) String studentName,
+            @RequestParam(required = false) String studentNo,
+            @RequestParam(required = false) String employmentStatus,
+            @RequestParam(required = false) Integer graduationYear,
+            HttpServletResponse response) {
+        
+        SchoolEmploymentQuery query = new SchoolEmploymentQuery();
+        query.setStudentName(studentName);
+        query.setStudentNo(studentNo);
+        query.setEmploymentStatus(employmentStatus);
+        query.setGraduationYear(graduationYear);
+        
+        employmentService.exportEmploymentData(query, UserContext.getUserId(), response);
     }
 }

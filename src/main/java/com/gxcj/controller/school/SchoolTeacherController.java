@@ -58,4 +58,24 @@ public class SchoolTeacherController {
         SchoolTeacherImportResultVo result = teacherService.importTeachers(file, userId);
         return Result.success(result);
     }
+
+    /**
+     * 导出教师数据
+     */
+    @GetMapping("/export")
+    public void exportTeacherData(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String employeeNo,
+            @RequestParam(required = false) String collegeName,
+            @RequestParam(required = false) String title,
+            HttpServletResponse response) {
+        
+        SchoolTeacherQuery query = new SchoolTeacherQuery();
+        query.setName(name);
+        query.setEmployeeNo(employeeNo);
+        query.setCollegeName(collegeName);
+        query.setTitle(title);
+        
+        teacherService.exportTeacherData(query, UserContext.getUserId(), response);
+    }
 }

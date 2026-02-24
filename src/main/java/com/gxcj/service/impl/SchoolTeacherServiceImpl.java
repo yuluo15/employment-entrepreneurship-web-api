@@ -5,14 +5,17 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.gxcj.entity.RoleEntity;
+import com.gxcj.entity.SchoolEntity;
 import com.gxcj.entity.TeacherEntity;
 import com.gxcj.entity.UserEntity;
 import com.gxcj.entity.dto.school.SchoolTeacherImportDto;
 import com.gxcj.entity.query.school.SchoolTeacherQuery;
 import com.gxcj.entity.vo.school.SchoolTeacherImportResultVo;
 import com.gxcj.entity.vo.school.SchoolTeacherVo;
+import com.gxcj.entity.vo.TeacherExportVo;
 import com.gxcj.exception.BusinessException;
 import com.gxcj.mapper.RoleMapper;
+import com.gxcj.mapper.SchoolMapper;
 import com.gxcj.mapper.TeacherMapper;
 import com.gxcj.mapper.UserMapper;
 import com.gxcj.result.PageResult;
@@ -31,6 +34,8 @@ import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -47,6 +52,9 @@ public class SchoolTeacherServiceImpl implements SchoolTeacherService {
     
     @Autowired
     private RoleMapper roleMapper;
+    
+    @Autowired
+    private SchoolMapper schoolMapper;
 
     @Override
     public PageResult<SchoolTeacherVo> getTeacherList(SchoolTeacherQuery query, String userId) {
@@ -234,6 +242,60 @@ public class SchoolTeacherServiceImpl implements SchoolTeacherService {
             
         } catch (IOException e) {
             throw new BusinessException("文件读取失败：" + e.getMessage());
+        }
+    }
+
+    @Override
+    public void exportTeacherData(SchoolTeacherQuery query, String userId, HttpServletResponse response) {
+        // 获取学校ID
+        String schoolId = getSchoolIdByUserId(userId);
+        
+        // 查询学校信息
+        SchoolEntity school = schoolMapper.selectById(schoolId);
+        String schoolName = school != null ? school.getName() : "";
+        
+        // 构建查询条件
+        LambdaQueryWrapper<TeacherEntity> wrapper = new LambdaQueryWrapper<TeacherEntity>()
+                .eq(TeacherEntity::getSchoolId, schoolId)
+                .like(StringUtils.isNotEmpty(query.getName()), 
+                      TeacherEntity::getName, query.getName())
+                .like(StringUtils.isNotEmpty(query.getEmployeeNo()), 
+                      TeacherEntity::getEmployeeNo, query.getEmployeeNo())
+                .like(StringUtils.isNotEmpty(query.getCollegeName()), 
+                      TeacherEntity::getCollegeName, query.getCollegeName())
+                .like(StringUtils.isNotEmpty(query.getTitle()), 
+                      TeacherEntity::getTitle, query.getTitle())
+                .orderByDesc(TeacherEntity::getCreateTime);
+        
+        List<TeacherEntity> teachers = teacherMapper.selectList(wrapper);
+        
+        // 转换为导出VO
+        List<TeacherExportVo> exportList = teachers.stream().map(teacher -> 
+            TeacherExportVo.builder()
+                    .employeeNo(teacher.getEmployeeNo())
+                    .name(teacher.getName())
+                    .schoolName(schoolName)
+                    .collegeName(teacher.getCollegeName())
+                    .title(teacher.getTitle())
+                    .expertise(teacher.getExpertise())
+                    .guidanceCount(teacher.getGuidanceCount())
+                    .phone(teacher.getPhone())
+                    .email(teacher.getEmail())
+                    .build()
+        ).collect(Collectors.toList());
+        
+        try {
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setCharacterEncoding("utf-8");
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String fileName = URLEncoder.encode("教师档案_" + timestamp, StandardCharsets.UTF_8);
+            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ".xlsx");
+            
+            EasyExcel.write(response.getOutputStream(), TeacherExportVo.class)
+                    .sheet("教师档案")
+                    .doWrite(exportList);
+        } catch (IOException e) {
+            throw new BusinessException("导出失败：" + e.getMessage());
         }
     }
 

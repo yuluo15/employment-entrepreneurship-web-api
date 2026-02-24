@@ -5,6 +5,7 @@ import com.gxcj.entity.query.school.SchoolEmploymentQuery;
 import com.gxcj.entity.vo.school.SchoolEmploymentStatsVo;
 import com.gxcj.entity.vo.school.SchoolEmploymentVo;
 import com.gxcj.result.PageResult;
+import jakarta.servlet.http.HttpServletResponse;
 
 public interface SchoolEmploymentService {
     
@@ -27,4 +28,9 @@ public interface SchoolEmploymentService {
      * 获取就业统计
      */
     SchoolEmploymentStatsVo getEmploymentStats(SchoolEmploymentQuery query, String userId);
+    
+    /**
+     * 导出就业数据
+     */
+    void exportEmploymentData(SchoolEmploymentQuery query, String userId, HttpServletResponse response);
 }
