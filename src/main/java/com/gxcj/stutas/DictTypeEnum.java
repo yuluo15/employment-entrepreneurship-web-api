@@ -11,5 +11,6 @@ public enum DictTypeEnum {
     sys_project_status,
     sys_project_domain,
     sys_salary_range,
-    sys_education;
+    sys_education,
+    sys_emp_status;
 }

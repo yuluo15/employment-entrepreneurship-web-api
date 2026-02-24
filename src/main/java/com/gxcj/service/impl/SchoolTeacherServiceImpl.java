@@ -187,9 +187,9 @@ public class SchoolTeacherServiceImpl implements SchoolTeacherService {
                     UserEntity user = new UserEntity();
                     user.setId(EntityHelper.uuid());
                     user.setLoginIdentity(dto.getEmployeeNo());
-                    user.setPassword(DigestUtils.md5DigestAsHex("123456".getBytes()));
+                    user.setPassword(EntityHelper.encodedPassword("123456"));
                     user.setRealName(dto.getName());
-                    user.setRoleKey("ROLE_TEACHER");
+                    user.setRoleKey("3");
                     user.setOwnerId(schoolId);
                     user.setStatus(1);
                     user.setGender("男".equals(dto.getGender()) ? 1 : 2);

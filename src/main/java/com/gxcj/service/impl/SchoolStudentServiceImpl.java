@@ -15,6 +15,7 @@ import com.gxcj.exception.BusinessException;
 import com.gxcj.mapper.*;
 import com.gxcj.result.PageResult;
 import com.gxcj.service.SchoolStudentService;
+import com.gxcj.stutas.DictTypeEnum;
 import com.gxcj.utils.EntityHelper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.BeanUtils;
@@ -33,6 +34,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -52,12 +54,18 @@ public class SchoolStudentServiceImpl implements SchoolStudentService {
 
     @Autowired
     private RoleMapper roleMapper;
+    @Autowired
+    private DictDataMapper dictDataMapper;
 
     @Override
     public PageResult<SchoolStudentVo> getStudentList(SchoolStudentQuery query, String userId) {
         // 获取学校ID
         String schoolId = getSchoolIdByUserId(userId);
-        
+
+        List<DictDataEntity> list = dictDataMapper.selectList(new LambdaQueryWrapper<DictDataEntity>()
+                .in(DictDataEntity::getDictType, DictTypeEnum.sys_education, DictTypeEnum.sys_emp_status));
+        Map<String, String> map = list.stream().collect(Collectors.toMap(DictDataEntity::getDictValue, DictDataEntity::getDictLabel, (x, y) -> x));
+
         // 构建查询条件
         LambdaQueryWrapper<StudentEntity> wrapper = new LambdaQueryWrapper<StudentEntity>()
                 .eq(StudentEntity::getSchoolId, schoolId)
@@ -87,6 +95,8 @@ public class SchoolStudentServiceImpl implements SchoolStudentService {
             SchoolStudentVo vo = new SchoolStudentVo();
             BeanUtils.copyProperties(entity, vo);
             vo.setGender(String.valueOf(entity.getGender()));
+            vo.setEducation(map.get(entity.getEducation()));
+//            vo.setEmploymentStatus(map.get(entity.getEmploymentStatus()));
             vo.setCreateTime(entity.getCreateTime() != null ? sdf.format(entity.getCreateTime()) : null);
             vo.setUpdateTime(entity.getUpdateTime() != null ? sdf.format(entity.getUpdateTime()) : null);
             return vo;
@@ -289,7 +299,8 @@ public class SchoolStudentServiceImpl implements SchoolStudentService {
                     student.setMajorName(dto.getMajorName());
                     student.setClassName(dto.getClassName());
 //                    student.setEducation(dto.getEducation() == "本科"? "BACHELOR" : "2");
-                    student.setEducation("BACHELOR");
+//                    student.setEducation("BACHELOR");
+                    student.setEducation(getEducation(dto.getEducation()));
                     student.setEnrollmentYear(dto.getEnrollmentYear());
                     student.setGraduationYear(dto.getGraduationYear());
                     student.setPhone(dto.getPhone());
@@ -428,6 +439,19 @@ public class SchoolStudentServiceImpl implements SchoolStudentService {
                 return "出国";
             case "4":
                 return "创业";
+            default:
+                return "未知";
+        }
+    }
+
+    private String getEducation(String education) {
+        switch (education) {
+            case "本科":
+                return "BACHELOR";
+            case "专科":
+                return "JUNIOR";
+            case "硕士":
+                return "MASTER";
             default:
                 return "未知";
         }

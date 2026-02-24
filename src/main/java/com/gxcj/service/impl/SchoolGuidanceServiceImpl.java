@@ -104,7 +104,9 @@ public class SchoolGuidanceServiceImpl implements SchoolGuidanceService {
         // 转换为VO
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         List<SchoolGuidanceVo> voList = new ArrayList<>();
-        
+        if (total.intValue() == 0) {
+            return new PageResult<>(total, voList);
+        }
         // 批量查询教师信息
         Map<String, TeacherEntity> teacherMap = teacherMapper.selectList(
                 new LambdaQueryWrapper<TeacherEntity>()

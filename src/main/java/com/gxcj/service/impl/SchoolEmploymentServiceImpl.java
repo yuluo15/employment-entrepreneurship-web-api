@@ -231,8 +231,8 @@ public class SchoolEmploymentServiceImpl implements SchoolEmploymentService {
         int employedCount = 0;
         
         for (StudentEntity student : students) {
-            String status = student.getEmploymentStatus() != null ? student.getEmploymentStatus() : "0";
-            if ("1".equals(status)) {
+            String status = student.getEmploymentStatus() != null ? student.getEmploymentStatus() : "UNEMPLOYED";
+            if ("SIGNED".equals(status)) {
                 employedCount++;
             }
         }

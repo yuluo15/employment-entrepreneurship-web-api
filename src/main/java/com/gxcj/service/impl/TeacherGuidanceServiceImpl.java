@@ -1,6 +1,7 @@
 package com.gxcj.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.gxcj.context.UserContext;
 import com.gxcj.entity.*;
@@ -47,7 +48,9 @@ public class TeacherGuidanceServiceImpl implements TeacherGuidanceService {
 
     @Override
     public TeacherGuidanceStatsVo getStats() {
-        String teacherId = UserContext.getUserId();
+        String userId = UserContext.getUserId();
+        TeacherEntity teacherEntity = teacherMapper.selectOne(new LambdaQueryWrapper<TeacherEntity>().eq(TeacherEntity::getUserId, userId));
+        String teacherId = teacherEntity.getTeacherId();
 
         LambdaQueryWrapper<ProjectCommentEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ProjectCommentEntity::getTeacherId, teacherId);
@@ -82,8 +85,10 @@ public class TeacherGuidanceServiceImpl implements TeacherGuidanceService {
 
     @Override
     public PageResult<TeacherGuidanceVo> getList(TeacherGuidanceQuery query) {
-        String teacherId = UserContext.getUserId();
-        UserEntity userEntity = userMapper.selectById(teacherId);
+        String userId = UserContext.getUserId();
+        TeacherEntity teacherEntity = teacherMapper.selectOne(new LambdaQueryWrapper<TeacherEntity>().eq(TeacherEntity::getUserId, userId));
+        String teacherId = teacherEntity.getTeacherId();
+        UserEntity userEntity = userMapper.selectById(userId);
 
         LambdaQueryWrapper<ProjectCommentEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ProjectCommentEntity::getTeacherId, teacherId);
@@ -174,7 +179,8 @@ public class TeacherGuidanceServiceImpl implements TeacherGuidanceService {
     @Override
     @Transactional
     public String addGuidance(TeacherGuidanceAddDto dto) {
-        String teacherId = UserContext.getUserId();
+        String userId = UserContext.getUserId();
+        TeacherEntity teacherEntity = teacherMapper.selectOne(new LambdaQueryWrapper<TeacherEntity>().eq(TeacherEntity::getUserId, userId));
 
         // 验证项目是否存在
         ProjectEntity project = projectMapper.selectById(dto.getProjectId());
@@ -191,11 +197,17 @@ public class TeacherGuidanceServiceImpl implements TeacherGuidanceService {
         ProjectCommentEntity comment = new ProjectCommentEntity();
         comment.setId(EntityHelper.uuid());
         comment.setProjectId(dto.getProjectId());
-        comment.setTeacherId(teacherId);
+        comment.setTeacherId(teacherEntity.getTeacherId());
         comment.setContent(dto.getContent());
         comment.setCreateTime(EntityHelper.now());
+        comment.setProjectName(project.getProjectName());
+        comment.setTeacherName(teacherEntity.getName());
 
         projectCommentMapper.insert(comment);
+
+        teacherMapper.update(new LambdaUpdateWrapper<TeacherEntity>()
+                .set(TeacherEntity::getGuidanceCount, teacherEntity.getGuidanceCount() + 1)
+                .eq(TeacherEntity::getTeacherId, teacherEntity.getTeacherId()));
 
         return comment.getId();
     }
