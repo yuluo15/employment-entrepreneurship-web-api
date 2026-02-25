@@ -4,6 +4,7 @@ import com.gxcj.entity.dto.ProjectApplyDto;
 import com.gxcj.entity.dto.ProjectApplicationHandleDto;
 import com.gxcj.entity.vo.ProjectApplicantVo;
 import com.gxcj.entity.vo.ProjectApplicationVo;
+import com.gxcj.entity.vo.job.MyJoinedProjectVo;
 import com.gxcj.result.PageResult;
 
 import java.util.Map;
@@ -18,4 +19,6 @@ public interface ProjectApplicationService {
     PageResult<ProjectApplicantVo> getProjectApplications(String projectId, Integer pageNum, Integer pageSize, String status);
     
     void handleApplication(String applicationId, ProjectApplicationHandleDto dto);
+    
+    PageResult<MyJoinedProjectVo> getMyJoinedProjects(Integer pageNum, Integer pageSize, String status);
 }

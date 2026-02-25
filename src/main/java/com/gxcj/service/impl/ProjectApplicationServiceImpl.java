@@ -13,6 +13,7 @@ import com.gxcj.entity.dto.ProjectApplyDto;
 import com.gxcj.entity.dto.ProjectApplicationHandleDto;
 import com.gxcj.entity.vo.ProjectApplicantVo;
 import com.gxcj.entity.vo.ProjectApplicationVo;
+import com.gxcj.entity.vo.job.MyJoinedProjectVo;
 import com.gxcj.exception.BusinessException;
 import com.gxcj.mapper.MessageMapper;
 import com.gxcj.mapper.ProjectApplicationMapper;
@@ -357,5 +358,81 @@ public class ProjectApplicationServiceImpl implements ProjectApplicationService 
             message.setCreateTime(EntityHelper.now());
             messageMapper.insert(message);
         }
+    }
+
+    @Override
+    public PageResult<MyJoinedProjectVo> getMyJoinedProjects(Integer pageNum, Integer pageSize, String status) {
+        String userId = UserContext.getUserId();
+
+        // 查询学生信息
+        LambdaQueryWrapper<StudentEntity> studentWrapper = new LambdaQueryWrapper<>();
+        studentWrapper.eq(StudentEntity::getUserId, userId);
+        StudentEntity student = studentMapper.selectOne(studentWrapper);
+
+        if (student == null) {
+            throw new BusinessException("学生信息不存在");
+        }
+
+        // 查询申请记录
+        LambdaQueryWrapper<ProjectApplicationEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ProjectApplicationEntity::getApplicantId, student.getStudentId());
+        if (StringUtils.hasText(status)) {
+            wrapper.eq(ProjectApplicationEntity::getStatus, status);
+        }
+        wrapper.orderByDesc(ProjectApplicationEntity::getCreateTime);
+
+        Page<ProjectApplicationEntity> page = new Page<>(pageNum, pageSize);
+        Page<ProjectApplicationEntity> result = projectApplicationMapper.selectPage(page, wrapper);
+
+        List<MyJoinedProjectVo> voList = new ArrayList<>();
+        if (!result.getRecords().isEmpty()) {
+            // 批量查询项目信息
+            List<String> projectIds = result.getRecords().stream()
+                    .map(ProjectApplicationEntity::getProjectId)
+                    .distinct()
+                    .collect(Collectors.toList());
+            List<ProjectEntity> projects = projectMapper.selectBatchIds(projectIds);
+            Map<String, ProjectEntity> projectMap = projects.stream()
+                    .collect(Collectors.toMap(ProjectEntity::getProjectId, p -> p));
+
+            // 批量查询项目负责人信息
+            List<String> userIds = projects.stream()
+                    .map(ProjectEntity::getUserId)
+                    .distinct()
+                    .collect(Collectors.toList());
+            List<UserEntity> users = userMapper.selectBatchIds(userIds);
+            Map<String, UserEntity> userMap = users.stream()
+                    .collect(Collectors.toMap(UserEntity::getId, u -> u));
+
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+            for (ProjectApplicationEntity application : result.getRecords()) {
+                MyJoinedProjectVo vo = new MyJoinedProjectVo();
+                vo.setApplicationId(application.getId());
+                vo.setProjectId(application.getProjectId());
+                vo.setStatus(application.getStatus());
+                vo.setApplicationReason(application.getApplicationReason());
+                vo.setReplyMessage(application.getReplyMessage());
+                vo.setApplyTime(application.getCreateTime() != null ? sdf.format(application.getCreateTime()) : null);
+                vo.setReplyTime(application.getReplyTime() != null ? sdf.format(application.getReplyTime()) : null);
+
+                ProjectEntity project = projectMap.get(application.getProjectId());
+                if (project != null) {
+                    vo.setProjectName(project.getProjectName());
+                    vo.setLogo(project.getLogo());
+                    vo.setDomain(project.getDomain());
+                    vo.setTeamSize(project.getTeamSize());
+
+                    UserEntity user = userMap.get(project.getUserId());
+                    if (user != null) {
+                        vo.setLeaderName(user.getNickname());
+                    }
+                }
+
+                voList.add(vo);
+            }
+        }
+
+        return new PageResult<>(result.getTotal(), voList);
     }
 }

@@ -44,6 +44,8 @@ public class StudentServiceImpl implements StudentService {
     private StudentResumeMapper studentResumeMapper;
     @Autowired
     private ProjectMapper projectMapper;
+    @Autowired
+    private ProjectApplicationMapper projectApplicationMapper;
 
     public PageResult<StudentEntity> list(StudentQuery studentQuery) {
         List<DictDataEntity> dictList = dictDataMapper.selectList(new LambdaQueryWrapper<DictDataEntity>().eq(DictDataEntity::getDictType, DictTypeEnum.sys_education.name()));
@@ -127,6 +129,12 @@ public class StudentServiceImpl implements StudentService {
         Long projCount = projectMapper.selectCount(new LambdaQueryWrapper<ProjectEntity>()
                 .eq(ProjectEntity::getUserId, UserContext.getUserId()));
         vo.setProjectCount(projCount.intValue());
+
+        // 统计我加入的项目数量（已通过的申请）
+        Long joinedCount = projectApplicationMapper.selectCount(new LambdaQueryWrapper<ProjectApplicationEntity>()
+                .eq(ProjectApplicationEntity::getApplicantId, studentId)
+                .eq(ProjectApplicationEntity::getStatus, "APPROVED"));
+        vo.setJoinedProjectCount(joinedCount.intValue());
 
         return vo;
     }

@@ -1,10 +1,12 @@
 package com.gxcj.controller.student;
 
+import com.gxcj.entity.vo.job.MyJoinedProjectVo;
 import com.gxcj.entity.vo.job.MyProjectVo;
 import com.gxcj.entity.vo.job.ProjectDetailVo;
 import com.gxcj.result.PageResult;
 import com.gxcj.result.Result;
 import com.gxcj.service.DictService;
+import com.gxcj.service.ProjectApplicationService;
 import com.gxcj.service.ProjectService;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,22 +17,24 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/mobile/project")
+@RequestMapping("/api/mobile")
 public class MobileProjectController {
 
     @Autowired
     private ProjectService projectService;
     @Autowired
     private DictService dictService;
+    @Autowired
+    private ProjectApplicationService projectApplicationService;
 
-    @GetMapping("/detail/{id}")
+    @GetMapping("/project/detail/{id}")
     @PreAuthorize("hasRole('ROLE_STUDENT')")
     public Result<ProjectDetailVo> getProjectDetail(@PathVariable("id") String projectId){
         ProjectDetailVo projectDetailVo = projectService.getProjectDetail(projectId);
         return Result.success(projectDetailVo);
     }
 
-    @GetMapping("/my/list")
+    @GetMapping("/project/my/list")
     @PreAuthorize("hasRole('ROLE_STUDENT')")
     public Result<PageResult<MyProjectVo>> getMyProjectList(
             @RequestParam(defaultValue = "1") Integer pageNum,
@@ -40,21 +44,32 @@ public class MobileProjectController {
         return Result.success(pageResult);
     }
 
-    @GetMapping("/getDomain")
+    @GetMapping("/my/joined-projects")
+    @PreAuthorize("hasRole('ROLE_STUDENT')")
+    public Result<PageResult<MyJoinedProjectVo>> getMyJoinedProjects(
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize,
+            @RequestParam(required = false) String status) {
+
+        PageResult<MyJoinedProjectVo> pageResult = projectApplicationService.getMyJoinedProjects(pageNum, pageSize, status);
+        return Result.success(pageResult);
+    }
+
+    @GetMapping("/project/getDomain")
     @PreAuthorize("hasRole('ROLE_STUDENT')")
     public Result<Map<String, String>> getDomain(){
         Map<String, String> domainList = dictService.getDomain();
         return Result.success(domainList);
     }
 
-    @PostMapping("/save")
+    @PostMapping("/project/save")
     @PreAuthorize("hasRole('ROLE_STUDENT')")
     public Result<String> save(@RequestBody ProjectForm projectForm){
         projectService.save(projectForm);
         return Result.success();
     }
 
-    @PostMapping("/delete/{id}")
+    @PostMapping("/project/delete/{id}")
     @PreAuthorize("hasRole('ROLE_STUDENT')")
     public Result<String> delete(@PathVariable("id") String projectId){
         projectService.delete(projectId);

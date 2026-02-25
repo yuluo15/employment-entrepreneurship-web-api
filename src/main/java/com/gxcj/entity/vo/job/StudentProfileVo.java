@@ -23,4 +23,5 @@ public class StudentProfileVo {
 
     // 创业信息
     private Integer projectCount;
+    private Integer joinedProjectCount; // 我加入的项目数量
 }
