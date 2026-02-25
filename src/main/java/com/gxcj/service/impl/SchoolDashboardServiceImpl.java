@@ -247,7 +247,7 @@ public class SchoolDashboardServiceImpl implements SchoolDashboardService {
                 rates.add(0.0);
             } else {
                 long employedCount = students.stream()
-                        .filter(s -> "1".equals(s.getEmploymentStatus()))
+                        .filter(s -> "SIGNED".equals(s.getEmploymentStatus()))
                         .count();
                 
                 double rate = Math.round(employedCount * 1000.0 / students.size()) / 10.0;
@@ -328,7 +328,7 @@ public class SchoolDashboardServiceImpl implements SchoolDashboardService {
             List<StudentEntity> collegeStudents = entry.getValue();
             
             long employedCount = collegeStudents.stream()
-                    .filter(s -> "1".equals(s.getEmploymentStatus()))
+                    .filter(s -> "SIGNED".equals(s.getEmploymentStatus()))
                     .count();
             
             double rate = 0.0;

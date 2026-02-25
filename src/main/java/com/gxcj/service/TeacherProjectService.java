@@ -1,5 +1,7 @@
 package com.gxcj.service;
 
+import com.gxcj.controller.teacher.TeacherProjectController;
+import com.gxcj.entity.DictDataEntity;
 import com.gxcj.entity.query.TeacherProjectQuery;
 import com.gxcj.entity.vo.teacher.TeacherProjectDetailVo;
 import com.gxcj.entity.vo.teacher.TeacherProjectGuidanceVo;
@@ -14,4 +16,6 @@ public interface TeacherProjectService {
     TeacherProjectDetailVo getProjectDetail(String projectId);
     
     List<TeacherProjectGuidanceVo> getProjectGuidanceList(String projectId);
+
+    List<TeacherProjectController.DictDomainVo> getProjectDomain();
 }

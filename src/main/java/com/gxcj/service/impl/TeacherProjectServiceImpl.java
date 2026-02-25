@@ -3,25 +3,18 @@ package com.gxcj.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.gxcj.context.UserContext;
-import com.gxcj.entity.ProjectCommentEntity;
-import com.gxcj.entity.ProjectEntity;
-import com.gxcj.entity.SchoolEntity;
-import com.gxcj.entity.StudentEntity;
-import com.gxcj.entity.TeacherEntity;
-import com.gxcj.entity.UserEntity;
+import com.gxcj.controller.teacher.TeacherProjectController;
+import com.gxcj.entity.*;
 import com.gxcj.entity.query.TeacherProjectQuery;
 import com.gxcj.entity.vo.teacher.TeacherProjectDetailVo;
 import com.gxcj.entity.vo.teacher.TeacherProjectGuidanceVo;
 import com.gxcj.entity.vo.teacher.TeacherProjectVo;
 import com.gxcj.exception.BusinessException;
-import com.gxcj.mapper.ProjectCommentMapper;
-import com.gxcj.mapper.ProjectMapper;
-import com.gxcj.mapper.SchoolMapper;
-import com.gxcj.mapper.StudentMapper;
-import com.gxcj.mapper.TeacherMapper;
-import com.gxcj.mapper.UserMapper;
+import com.gxcj.mapper.*;
 import com.gxcj.result.PageResult;
 import com.gxcj.service.TeacherProjectService;
+import com.gxcj.stutas.DictTypeEnum;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -30,10 +23,7 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -56,13 +46,19 @@ public class TeacherProjectServiceImpl implements TeacherProjectService {
 
     @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private DictDataMapper dictDataMapper;
 
     @Override
     public PageResult<TeacherProjectVo> getProjects(TeacherProjectQuery query) {
-        String teacherId = UserContext.getUserId();
+        String userId = UserContext.getUserId();
+        List<DictDataEntity> list = dictDataMapper.selectList(new LambdaQueryWrapper<DictDataEntity>()
+                .eq(DictDataEntity::getDictType, DictTypeEnum.sys_project_domain));
+        Map<String, String> map = list.stream().collect(Collectors.toMap(DictDataEntity::getDictValue, DictDataEntity::getDictLabel, (x, y) -> x));
 
         // 获取教师所在学校ID
-        TeacherEntity teacher = teacherMapper.selectById(teacherId);
+        TeacherEntity teacher = teacherMapper.selectOne(new LambdaQueryWrapper<TeacherEntity>()
+                .eq(TeacherEntity::getUserId, userId));
         String teacherSchoolId = teacher != null ? teacher.getSchoolId() : null;
 
         LambdaQueryWrapper<ProjectEntity> wrapper = new LambdaQueryWrapper<>();
@@ -102,7 +98,7 @@ public class TeacherProjectServiceImpl implements TeacherProjectService {
 
         // 领域筛选
         if (StringUtils.hasText(query.getDomain())) {
-            wrapper.eq(ProjectEntity::getDomain, query.getDomain());
+            wrapper.like(ProjectEntity::getDomain, query.getDomain());
         }
 
         wrapper.orderByDesc(ProjectEntity::getCreateTime);
@@ -149,7 +145,8 @@ public class TeacherProjectServiceImpl implements TeacherProjectService {
                 vo.setProjectName(project.getProjectName());
                 vo.setLogo(project.getLogo());
                 vo.setSchoolId(project.getSchoolId());
-                vo.setDomain(project.getDomain());
+                vo.setDomain(String.join(",", Arrays.stream(project.getDomain().split(","))
+                        .filter(map::containsKey).map(map::get).toList()));
                 vo.setTeamSize(project.getTeamSize());
                 vo.setStatus(project.getStatus());
                 vo.setGuidanceCount(guidanceCountMap.getOrDefault(project.getProjectId(), 0L).intValue());
@@ -279,6 +276,18 @@ public class TeacherProjectServiceImpl implements TeacherProjectService {
         }
 
         return voList;
+    }
+
+    @Override
+    public List<TeacherProjectController.DictDomainVo> getProjectDomain() {
+        List<DictDataEntity> list = dictDataMapper.selectList(new LambdaQueryWrapper<DictDataEntity>()
+                .eq(DictDataEntity::getDictType, DictTypeEnum.sys_project_domain));
+        List<TeacherProjectController.DictDomainVo> domainVos = list.stream().map(dictDataEntity -> {
+            TeacherProjectController.DictDomainVo dictDomainVo = new TeacherProjectController.DictDomainVo();
+            BeanUtils.copyProperties(dictDataEntity, dictDomainVo);
+            return dictDomainVo;
+        }).toList();
+        return domainVos;
     }
 
     private String formatRelativeTime(Timestamp timestamp) {

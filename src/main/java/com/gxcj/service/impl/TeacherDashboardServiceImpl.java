@@ -6,6 +6,8 @@ import com.gxcj.entity.vo.teacher.*;
 import com.gxcj.exception.BusinessException;
 import com.gxcj.mapper.*;
 import com.gxcj.service.TeacherDashboardService;
+import com.gxcj.service.UserService;
+import com.gxcj.stutas.DictTypeEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,6 +34,10 @@ public class TeacherDashboardServiceImpl implements TeacherDashboardService {
     
     @Autowired
     private StudentMapper studentMapper;
+    @Autowired
+    private UserMapper userMapper;
+    @Autowired
+    private DictDataMapper dictDataMapper;
 
     @Override
     public TeacherDashboardVo getDashboardData(String userId) {
@@ -50,7 +56,7 @@ public class TeacherDashboardServiceImpl implements TeacherDashboardService {
         TeacherDashboardVo vo = new TeacherDashboardVo();
         
         // 1. 教师基本信息
-        vo.setTeacherInfo(getTeacherInfo(teacher));
+        vo.setTeacherInfo(getTeacherInfo(teacher, userId));
         
         // 2. 统计数据
         vo.setStats(getStats(teacher));
@@ -69,7 +75,9 @@ public class TeacherDashboardServiceImpl implements TeacherDashboardService {
     /**
      * 获取教师基本信息
      */
-    private TeacherInfoVo getTeacherInfo(TeacherEntity teacher) {
+    private TeacherInfoVo getTeacherInfo(TeacherEntity teacher, String userId) {
+        UserEntity userEntity = userMapper.selectById(userId);
+
         TeacherInfoVo vo = new TeacherInfoVo();
         vo.setTeacherId(teacher.getTeacherId());
         vo.setName(teacher.getName());
@@ -77,6 +85,7 @@ public class TeacherDashboardServiceImpl implements TeacherDashboardService {
         vo.setCollegeName(teacher.getCollegeName());
         vo.setSchoolId(teacher.getSchoolId());
         vo.setExpertise(teacher.getExpertise());
+        vo.setAvatar(userEntity.getAvatar());
         
         // 获取学校名称
         SchoolEntity school = schoolMapper.selectById(teacher.getSchoolId());
@@ -134,6 +143,9 @@ public class TeacherDashboardServiceImpl implements TeacherDashboardService {
      * 获取待指导项目（指导次数为0的项目，优先本校，最新5个）
      */
     private List<TeacherPendingProjectVo> getPendingProjects(TeacherEntity teacher) {
+        List<DictDataEntity> list = dictDataMapper.selectList(new LambdaQueryWrapper<DictDataEntity>()
+                .eq(DictDataEntity::getDictType, DictTypeEnum.sys_project_domain));
+        Map<String, String> map = list.stream().collect(Collectors.toMap(DictDataEntity::getDictValue, DictDataEntity::getDictLabel, (x, y) -> x));
         // 获取该教师已指导过的项目ID列表
         List<ProjectCommentEntity> comments = projectCommentMapper.selectList(
                 new LambdaQueryWrapper<ProjectCommentEntity>()
@@ -170,7 +182,8 @@ public class TeacherDashboardServiceImpl implements TeacherDashboardService {
             vo.setProjectId(project.getProjectId());
             vo.setProjectName(project.getProjectName());
             vo.setLogo(project.getLogo());
-            vo.setDomain(project.getDomain());
+            vo.setDomain(String.join(",", Arrays.stream(project.getDomain().split(","))
+                    .filter(map::containsKey).map(map::get).toList()));
             vo.setCreateTime(formatRelativeTime(project.getCreateTime()));
             
             // 获取学生信息

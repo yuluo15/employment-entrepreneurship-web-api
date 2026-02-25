@@ -7,6 +7,7 @@ import com.gxcj.entity.vo.school.*;
 import com.gxcj.exception.BusinessException;
 import com.gxcj.mapper.*;
 import com.gxcj.service.SchoolStatisticsService;
+import com.gxcj.stutas.DictTypeEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -42,6 +43,8 @@ public class SchoolStatisticsServiceImpl implements SchoolStatisticsService {
     
     @Autowired
     private RoleMapper roleMapper;
+    @Autowired
+    private DictDataMapper dictDataMapper;
 
     @Override
     public SchoolEmploymentStatsVo getEmploymentStats(Integer graduationYear, String collegeName, String userId) {
@@ -260,30 +263,52 @@ public class SchoolStatisticsServiceImpl implements SchoolStatisticsService {
      */
     private List<SchoolEntrepDomainDistributionVo> getDomainDistribution(String schoolId, String collegeName) {
         List<ProjectEntity> projects = getProjectList(schoolId, collegeName);
-        
-        // 按领域统计
-        Map<String, Integer> domainMap = new HashMap<>();
-        
-        for (ProjectEntity project : projects) {
-            if (StringUtils.isNotBlank(project.getDomain())) {
-                domainMap.put(project.getDomain(), 
-                        domainMap.getOrDefault(project.getDomain(), 0) + 1);
-            }
-        }
-        
-        // 转换为VO列表
-        List<SchoolEntrepDomainDistributionVo> result = new ArrayList<>();
-        for (Map.Entry<String, Integer> entry : domainMap.entrySet()) {
-            SchoolEntrepDomainDistributionVo vo = new SchoolEntrepDomainDistributionVo();
-            vo.setDomain(entry.getKey());
-            vo.setCount(entry.getValue());
-            result.add(vo);
-        }
-        
-        // 按项目数量降序排列
-        result.sort((a, b) -> Integer.compare(b.getCount(), a.getCount()));
-        
-        return result;
+        List<DictDataEntity> list = dictDataMapper.selectList(new LambdaQueryWrapper<DictDataEntity>()
+                .eq(DictDataEntity::getDictType, DictTypeEnum.sys_project_domain));
+        Map<String, String> map = list.stream().collect(Collectors.toMap(DictDataEntity::getDictValue, DictDataEntity::getDictLabel, (x, y) -> x));
+
+//        // 按领域统计
+//        Map<String, Integer> domainMap = new HashMap<>();
+//
+//        for (ProjectEntity project : projects) {
+//            if (StringUtils.isNotBlank(project.getDomain())) {
+//                domainMap.put(project.getDomain(),
+//                        domainMap.getOrDefault(project.getDomain(), 0) + 1);
+//            }
+//        }
+//
+//        // 转换为VO列表
+//        List<SchoolEntrepDomainDistributionVo> result = new ArrayList<>();
+//        for (Map.Entry<String, Integer> entry : domainMap.entrySet()) {
+//            SchoolEntrepDomainDistributionVo vo = new SchoolEntrepDomainDistributionVo();
+//            vo.setDomain(entry.getKey());
+//            vo.setCount(entry.getValue());
+//            result.add(vo);
+//        }
+
+        return projects.stream()
+                // 1. 过滤掉 domain 为空的记录
+                .filter(p -> StringUtils.isNotBlank(p.getDomain()))
+
+                // 2. 拆分并打平：["A,B", "C"] -> 流中的 ["A", "B", "C"]
+                .flatMap(p -> Arrays.stream(p.getDomain().split("[,，]")))
+
+                // 3. 清理空格并过滤掉空串
+                .map(String::trim)
+                .filter(StringUtils::isNotBlank)
+
+                // 4. 分组计数：转为 Map<String, Long>
+                .collect(Collectors.groupingBy(domain -> domain, Collectors.counting()))
+
+                // 5. 将 Map 转换为 VO 列表
+                .entrySet().stream()
+                .map(entry -> {
+                    SchoolEntrepDomainDistributionVo vo = new SchoolEntrepDomainDistributionVo();
+                    vo.setDomain(map.get(entry.getKey()));
+                    vo.setCount(entry.getValue().intValue()); // counting() 返回 Long，需要转 int
+                    return vo;
+                // 按项目数量降序排列
+                }).sorted((a, b) -> Integer.compare(b.getCount(), a.getCount())).collect(Collectors.toList());
     }
 
     /**
@@ -560,8 +585,8 @@ public class SchoolStatisticsServiceImpl implements SchoolStatisticsService {
             int employedCount = 0;
             
             for (StudentEntity student : collegeStudents) {
-                String status = student.getEmploymentStatus() != null ? student.getEmploymentStatus() : "0";
-                if ("1".equals(status)) {
+                String status = student.getEmploymentStatus() != null ? student.getEmploymentStatus() : "UNEMPLOYED";
+                if ("SIGNED".equals(status)) {
                     employedCount++;
                 }
             }
@@ -607,8 +632,8 @@ public class SchoolStatisticsServiceImpl implements SchoolStatisticsService {
             int employedCount = 0;
             
             for (StudentEntity student : majorStudents) {
-                String status = student.getEmploymentStatus() != null ? student.getEmploymentStatus() : "0";
-                if ("1".equals(status)) {
+                String status = student.getEmploymentStatus() != null ? student.getEmploymentStatus() : "UNEMPLOYED";
+                if ("SIGNED".equals(status)) {
                     employedCount++;
                 }
             }
@@ -640,7 +665,7 @@ public class SchoolStatisticsServiceImpl implements SchoolStatisticsService {
         // 获取已就业的学生ID列表
         List<StudentEntity> students = getStudentList(schoolId, graduationYear, collegeName);
         List<String> employedStudentIds = students.stream()
-                .filter(s -> "1".equals(s.getEmploymentStatus()))
+                .filter(s -> "SIGNED".equals(s.getEmploymentStatus()))
                 .map(StudentEntity::getStudentId)
                 .collect(Collectors.toList());
         
@@ -685,7 +710,7 @@ public class SchoolStatisticsServiceImpl implements SchoolStatisticsService {
         // 获取已就业的学生ID列表
         List<StudentEntity> students = getStudentList(schoolId, graduationYear, collegeName);
         List<String> employedStudentIds = students.stream()
-                .filter(s -> "1".equals(s.getEmploymentStatus()))
+                .filter(s -> "SIGNED".equals(s.getEmploymentStatus()))
                 .map(StudentEntity::getStudentId)
                 .collect(Collectors.toList());
         
@@ -734,10 +759,14 @@ public class SchoolStatisticsServiceImpl implements SchoolStatisticsService {
      * 获取行业分布 TOP8
      */
     private List<SchoolIndustryDistributionVo> getIndustryDistribution(String schoolId, Integer graduationYear, String collegeName) {
+
+        List<DictDataEntity> list = dictDataMapper.selectList(new LambdaQueryWrapper<DictDataEntity>()
+                .eq(DictDataEntity::getDictType, DictTypeEnum.sys_industry));
+        Map<String, String> map = list.stream().collect(Collectors.toMap(DictDataEntity::getDictValue, DictDataEntity::getDictLabel, (a, b) -> a));
         // 获取已就业的学生ID列表
         List<StudentEntity> students = getStudentList(schoolId, graduationYear, collegeName);
         List<String> employedStudentIds = students.stream()
-                .filter(s -> "1".equals(s.getEmploymentStatus()))
+                .filter(s -> "SIGNED".equals(s.getEmploymentStatus()))
                 .map(StudentEntity::getStudentId)
                 .collect(Collectors.toList());
         
@@ -754,12 +783,24 @@ public class SchoolStatisticsServiceImpl implements SchoolStatisticsService {
         
         // 按行业统计
         Map<String, Integer> industryMap = new HashMap<>();
-        
+
         for (JobDeliveryEntity delivery : deliveries) {
             CompanyEntity company = companyMapper.selectById(delivery.getCompanyId());
+
             if (company != null && StringUtils.isNotBlank(company.getIndustry())) {
-                industryMap.put(company.getIndustry(), 
-                        industryMap.getOrDefault(company.getIndustry(), 0) + 1);
+                // 1. 使用正则表达式分割字符串，兼容英文逗号 "," 和中文逗号 "，"
+                String[] industries = company.getIndustry().split("[,，]");
+
+                // 2. 遍历拆分出来的每一个行业
+                for (String industry : industries) {
+                    String cleanIndustry = industry.trim(); // 去除可能存在的首尾空格
+
+                    // 3. 判空后单独统计
+                    if (StringUtils.isNotBlank(cleanIndustry)) {
+                        industryMap.put(cleanIndustry,
+                                industryMap.getOrDefault(cleanIndustry, 0) + 1);
+                    }
+                }
             }
         }
         
@@ -767,7 +808,7 @@ public class SchoolStatisticsServiceImpl implements SchoolStatisticsService {
         List<SchoolIndustryDistributionVo> result = new ArrayList<>();
         for (Map.Entry<String, Integer> entry : industryMap.entrySet()) {
             SchoolIndustryDistributionVo vo = new SchoolIndustryDistributionVo();
-            vo.setIndustry(entry.getKey());
+            vo.setIndustry(map.get(entry.getKey()));
             vo.setCount(entry.getValue());
             result.add(vo);
         }
@@ -785,7 +826,7 @@ public class SchoolStatisticsServiceImpl implements SchoolStatisticsService {
         // 获取已就业的学生ID列表
         List<StudentEntity> students = getStudentList(schoolId, graduationYear, collegeName);
         List<String> employedStudentIds = students.stream()
-                .filter(s -> "1".equals(s.getEmploymentStatus()))
+                .filter(s -> "SIGNED".equals(s.getEmploymentStatus()))
                 .map(StudentEntity::getStudentId)
                 .collect(Collectors.toList());
         
@@ -852,7 +893,7 @@ public class SchoolStatisticsServiceImpl implements SchoolStatisticsService {
     private String calculateAvgSalary(String schoolId, Integer graduationYear, String collegeName) {
         List<StudentEntity> students = getStudentList(schoolId, graduationYear, collegeName);
         List<String> employedStudentIds = students.stream()
-                .filter(s -> "1".equals(s.getEmploymentStatus()))
+                .filter(s -> "SIGNED".equals(s.getEmploymentStatus()))
                 .map(StudentEntity::getStudentId)
                 .collect(Collectors.toList());
         
@@ -898,8 +939,8 @@ public class SchoolStatisticsServiceImpl implements SchoolStatisticsService {
         
         try {
             // 匹配格式：8-12K
-            if (salaryRange.matches("\\d+-\\d+K")) {
-                String[] parts = salaryRange.replace("K", "").split("-");
+            if (salaryRange.matches("\\d+-\\d+k")) {
+                String[] parts = salaryRange.replace("k", "").split("-");
                 double min = Double.parseDouble(parts[0]) * 1000;
                 double max = Double.parseDouble(parts[1]) * 1000;
                 return (min + max) / 2;
@@ -922,8 +963,8 @@ public class SchoolStatisticsServiceImpl implements SchoolStatisticsService {
         
         try {
             // 匹配格式：8-12K
-            if (salaryRange.matches("\\d+-\\d+K")) {
-                String[] parts = salaryRange.replace("K", "").split("-");
+            if (salaryRange.matches("\\d+-\\d+k")) {
+                String[] parts = salaryRange.replace("k", "").split("-");
                 int min = Integer.parseInt(parts[0]);
                 int max = Integer.parseInt(parts[1]);
                 

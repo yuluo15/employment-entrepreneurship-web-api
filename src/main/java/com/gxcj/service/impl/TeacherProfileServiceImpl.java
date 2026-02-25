@@ -6,6 +6,7 @@ import com.gxcj.entity.ProjectCommentEntity;
 import com.gxcj.entity.SchoolEntity;
 import com.gxcj.entity.TeacherEntity;
 import com.gxcj.entity.UserEntity;
+import com.gxcj.entity.dto.UpdateTeacherInfoDto;
 import com.gxcj.entity.vo.teacher.TeacherProfileVo;
 import com.gxcj.exception.BusinessException;
 import com.gxcj.mapper.ProjectCommentMapper;
@@ -13,8 +14,10 @@ import com.gxcj.mapper.SchoolMapper;
 import com.gxcj.mapper.TeacherMapper;
 import com.gxcj.mapper.UserMapper;
 import com.gxcj.service.TeacherProfileService;
+import com.gxcj.utils.EntityHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.text.SimpleDateFormat;
 import java.util.List;
@@ -113,5 +116,60 @@ public class TeacherProfileServiceImpl implements TeacherProfileService {
             return phone;
         }
         return phone.substring(0, 3) + "****" + phone.substring(7);
+    }
+
+    @Override
+    @Transactional
+    public void updateTeacherInfo(UpdateTeacherInfoDto dto) {
+        String userId = UserContext.getUserId();
+
+        // 查询教师信息
+        LambdaQueryWrapper<TeacherEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(TeacherEntity::getUserId, userId);
+        TeacherEntity teacher = teacherMapper.selectOne(wrapper);
+
+        if (teacher == null) {
+            throw new BusinessException("教师信息不存在");
+        }
+
+        // 更新教师表字段
+        boolean teacherUpdated = false;
+        if (dto.getGender() != null) {
+            teacher.setGender(dto.getGender());
+            teacherUpdated = true;
+        }
+        if (dto.getPhone() != null) {
+            teacher.setPhone(dto.getPhone());
+            teacherUpdated = true;
+        }
+        if (dto.getEmail() != null) {
+            teacher.setEmail(dto.getEmail());
+            teacherUpdated = true;
+        }
+        if (dto.getExpertise() != null) {
+            teacher.setExpertise(dto.getExpertise());
+            teacherUpdated = true;
+        }
+        if (dto.getIntro() != null) {
+            teacher.setIntro(dto.getIntro());
+            teacherUpdated = true;
+        }
+
+        if (teacherUpdated) {
+            teacher.setUpdateTime(EntityHelper.now());
+            teacherMapper.updateById(teacher);
+        }
+
+        // 更新用户表的头像字段
+        if (dto.getAvatar() != null) {
+            UserEntity user = userMapper.selectById(userId);
+            if (user != null) {
+                user.setAvatar(dto.getAvatar());
+                user.setPhone(dto.getPhone());
+                user.setEmail(dto.getEmail());
+                user.setUpdateTime(EntityHelper.now());
+                userMapper.updateById(user);
+            }
+        }
     }
 }

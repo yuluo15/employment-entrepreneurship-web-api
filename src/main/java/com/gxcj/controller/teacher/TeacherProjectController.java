@@ -1,5 +1,6 @@
 package com.gxcj.controller.teacher;
 
+import com.gxcj.entity.DictDataEntity;
 import com.gxcj.entity.query.TeacherProjectQuery;
 import com.gxcj.entity.vo.teacher.TeacherProjectDetailVo;
 import com.gxcj.entity.vo.teacher.TeacherProjectGuidanceVo;
@@ -7,12 +8,10 @@ import com.gxcj.entity.vo.teacher.TeacherProjectVo;
 import com.gxcj.result.PageResult;
 import com.gxcj.result.Result;
 import com.gxcj.service.TeacherProjectService;
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -22,6 +21,13 @@ public class TeacherProjectController {
 
     @Autowired
     private TeacherProjectService teacherProjectService;
+
+    @GetMapping("/projects/domain")
+    @PreAuthorize("hasRole('ROLE_TEACHER')")
+    public Result<List<DictDomainVo>> getProjectDomain() {
+        List<DictDomainVo> dictDataEntity = teacherProjectService.getProjectDomain();
+        return Result.success(dictDataEntity);
+    }
 
     @GetMapping("/projects")
     @PreAuthorize("hasRole('ROLE_TEACHER')")
@@ -42,5 +48,12 @@ public class TeacherProjectController {
     public Result<List<TeacherProjectGuidanceVo>> getProjectGuidanceList(@PathVariable String id) {
         List<TeacherProjectGuidanceVo> list = teacherProjectService.getProjectGuidanceList(id);
         return Result.success(list);
+    }
+
+    @Data
+    public static class DictDomainVo{
+        private String id;
+        private String dictValue;
+        private String dictLabel;
     }
 }
