@@ -10,7 +10,7 @@ public interface ProjectService {
 
     PageResult<MyProjectVo> getMyProjectList(Integer pageNum, Integer pageSize);
 
-    void save(MobileProjectController.ProjectForm projectForm);
+    String save(MobileProjectController.ProjectForm projectForm);
 
     void delete(String projectId);
 }

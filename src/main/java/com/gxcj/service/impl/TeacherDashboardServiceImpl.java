@@ -102,36 +102,44 @@ public class TeacherDashboardServiceImpl implements TeacherDashboardService {
     private TeacherStatsVo getStats(TeacherEntity teacher) {
         TeacherStatsVo vo = new TeacherStatsVo();
         
-        // 总指导次数
-        int guidanceCount = projectCommentMapper.selectCount(
-                new LambdaQueryWrapper<ProjectCommentEntity>()
-                        .eq(ProjectCommentEntity::getTeacherId, teacher.getTeacherId())
+        // 我指导的项目总数
+        int myProjectCount = projectMapper.selectCount(
+                new LambdaQueryWrapper<ProjectEntity>()
+                        .eq(ProjectEntity::getMentorId, teacher.getTeacherId())
         ).intValue();
-        vo.setGuidanceCount(guidanceCount);
+        vo.setProjectCount(myProjectCount);
         
-        // 指导项目数（去重）
-        List<ProjectCommentEntity> comments = projectCommentMapper.selectList(
-                new LambdaQueryWrapper<ProjectCommentEntity>()
-                        .eq(ProjectCommentEntity::getTeacherId, teacher.getTeacherId())
+        // 总指导次数（只统计自己指导的项目）
+        List<ProjectEntity> myProjects = projectMapper.selectList(
+                new LambdaQueryWrapper<ProjectEntity>()
+                        .eq(ProjectEntity::getMentorId, teacher.getTeacherId())
         );
-        long projectCount = comments.stream()
-                .map(ProjectCommentEntity::getProjectId)
-                .distinct()
-                .count();
-        vo.setProjectCount((int) projectCount);
+        List<String> myProjectIds = myProjects.stream()
+                .map(ProjectEntity::getProjectId)
+                .collect(Collectors.toList());
+        
+        int guidanceCount = 0;
+        if (!myProjectIds.isEmpty()) {
+            guidanceCount = projectCommentMapper.selectCount(
+                    new LambdaQueryWrapper<ProjectCommentEntity>()
+                            .eq(ProjectCommentEntity::getTeacherId, teacher.getTeacherId())
+                            .in(ProjectCommentEntity::getProjectId, myProjectIds)
+            ).intValue();
+        }
+        vo.setGuidanceCount(guidanceCount);
         
         // 评分（使用教师表中的rating_score）
         vo.setRatingScore(teacher.getRatingScore() != null ? 
                 teacher.getRatingScore().doubleValue() : 5.0);
         
-        // 本周新增项目数（本校）
+        // 本周新增我指导的项目数
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.DAY_OF_YEAR, -7);
         Date weekAgo = cal.getTime();
         
         int weekNewCount = projectMapper.selectCount(
                 new LambdaQueryWrapper<ProjectEntity>()
-                        .eq(ProjectEntity::getSchoolId, teacher.getSchoolId())
+                        .eq(ProjectEntity::getMentorId, teacher.getTeacherId())
                         .ge(ProjectEntity::getCreateTime, weekAgo)
         ).intValue();
         vo.setWeekNewCount(weekNewCount);
@@ -140,12 +148,24 @@ public class TeacherDashboardServiceImpl implements TeacherDashboardService {
     }
 
     /**
-     * 获取待指导项目（指导次数为0的项目，优先本校，最新5个）
+     * 获取待指导项目（我指导的项目中指导次数为0的项目，最新5个）
      */
     private List<TeacherPendingProjectVo> getPendingProjects(TeacherEntity teacher) {
         List<DictDataEntity> list = dictDataMapper.selectList(new LambdaQueryWrapper<DictDataEntity>()
                 .eq(DictDataEntity::getDictType, DictTypeEnum.sys_project_domain));
         Map<String, String> map = list.stream().collect(Collectors.toMap(DictDataEntity::getDictValue, DictDataEntity::getDictLabel, (x, y) -> x));
+        
+        // 查询我指导的所有项目
+        List<ProjectEntity> myProjects = projectMapper.selectList(
+                new LambdaQueryWrapper<ProjectEntity>()
+                        .eq(ProjectEntity::getMentorId, teacher.getTeacherId())
+                        .orderByDesc(ProjectEntity::getCreateTime)
+        );
+        
+        if (myProjects.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
         // 获取该教师已指导过的项目ID列表
         List<ProjectCommentEntity> comments = projectCommentMapper.selectList(
                 new LambdaQueryWrapper<ProjectCommentEntity>()
@@ -156,24 +176,9 @@ public class TeacherDashboardServiceImpl implements TeacherDashboardService {
                 .map(ProjectCommentEntity::getProjectId)
                 .collect(Collectors.toSet());
         
-        // 查询所有项目
-        List<ProjectEntity> allProjects = projectMapper.selectList(
-                new LambdaQueryWrapper<ProjectEntity>()
-                        .orderByDesc(ProjectEntity::getCreateTime)
-        );
-        
-        // 过滤出未指导的项目，优先本校
-        List<ProjectEntity> pendingProjects = allProjects.stream()
+        // 过滤出未指导的项目（我指导的项目中还没有发表过指导意见的）
+        List<ProjectEntity> pendingProjects = myProjects.stream()
                 .filter(p -> !guidedProjectIds.contains(p.getProjectId()))
-                .sorted((p1, p2) -> {
-                    // 本校项目优先
-                    boolean isSchool1 = teacher.getSchoolId().equals(p1.getSchoolId());
-                    boolean isSchool2 = teacher.getSchoolId().equals(p2.getSchoolId());
-                    if (isSchool1 && !isSchool2) return -1;
-                    if (!isSchool1 && isSchool2) return 1;
-                    // 时间倒序
-                    return p2.getCreateTime().compareTo(p1.getCreateTime());
-                })
                 .limit(5)
                 .collect(Collectors.toList());
         
@@ -201,12 +206,28 @@ public class TeacherDashboardServiceImpl implements TeacherDashboardService {
     }
 
     /**
-     * 获取最近指导记录（最新5条）
+     * 获取最近指导记录（最新5条，只统计自己指导的项目）
      */
     private List<TeacherRecentGuidanceVo> getRecentGuidance(TeacherEntity teacher) {
+        // 查询我指导的所有项目ID
+        List<ProjectEntity> myProjects = projectMapper.selectList(
+                new LambdaQueryWrapper<ProjectEntity>()
+                        .eq(ProjectEntity::getMentorId, teacher.getTeacherId())
+        );
+        
+        if (myProjects.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        List<String> myProjectIds = myProjects.stream()
+                .map(ProjectEntity::getProjectId)
+                .collect(Collectors.toList());
+        
+        // 查询我对这些项目的指导记录
         List<ProjectCommentEntity> comments = projectCommentMapper.selectList(
                 new LambdaQueryWrapper<ProjectCommentEntity>()
                         .eq(ProjectCommentEntity::getTeacherId, teacher.getTeacherId())
+                        .in(ProjectCommentEntity::getProjectId, myProjectIds)
                         .orderByDesc(ProjectCommentEntity::getCreateTime)
                         .last("LIMIT 5")
         );

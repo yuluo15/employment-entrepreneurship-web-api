@@ -39,6 +39,9 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Autowired
     private StudentMapper studentMapper;
+    
+    @Autowired
+    private TeacherMapper teacherMapper;
 
     @Override
     public ProjectDetailVo getProjectDetail(String projectId) {
@@ -138,7 +141,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public void save(MobileProjectController.ProjectForm projectForm) {
+    public String save(MobileProjectController.ProjectForm projectForm) {
         if (projectForm.getId() == null || projectForm.getId().isEmpty()) {
             // 新增项目
             ProjectEntity projectEntity = new ProjectEntity();
@@ -148,7 +151,20 @@ public class ProjectServiceImpl implements ProjectService {
             projectEntity.setLogo(projectForm.getLogo());
             projectEntity.setDomain(projectForm.getDomain());
             projectEntity.setSlogan(projectForm.getSlogan());
-            projectEntity.setMentorName(projectForm.getMentorName());
+            
+            // 处理指导教师（优先使用mentorId）
+            if (projectForm.getMentorId() != null && !projectForm.getMentorId().isEmpty()) {
+                projectEntity.setMentorId(projectForm.getMentorId());
+                // 查询教师姓名作为冗余字段
+                TeacherEntity teacher = teacherMapper.selectById(projectForm.getMentorId());
+                if (teacher != null) {
+                    projectEntity.setMentorName(teacher.getName());
+                }
+            } else if (projectForm.getMentorName() != null && !projectForm.getMentorName().isEmpty()) {
+                // 兼容旧版本，如果只传了mentorName
+                projectEntity.setMentorName(projectForm.getMentorName());
+            }
+            
             projectEntity.setTeamSize(projectForm.getTeamSize() != null ? Integer.parseInt(projectForm.getTeamSize()) : null);
             projectEntity.setDescription(projectForm.getDescription());
             projectEntity.setNeeds(projectForm.getNeeds());
@@ -165,6 +181,9 @@ public class ProjectServiceImpl implements ProjectService {
             projectEntity.setUpdateTime(com.gxcj.utils.EntityHelper.now());
             
             projectMapper.insert(projectEntity);
+            
+            // 返回新创建的项目ID
+            return projectEntity.getProjectId();
         } else {
             // 更新项目
             ProjectEntity projectEntity = projectMapper.selectById(projectForm.getId());
@@ -181,13 +200,29 @@ public class ProjectServiceImpl implements ProjectService {
             projectEntity.setLogo(projectForm.getLogo());
             projectEntity.setDomain(projectForm.getDomain());
             projectEntity.setSlogan(projectForm.getSlogan());
-            projectEntity.setMentorName(projectForm.getMentorName());
+            
+            // 处理指导教师（优先使用mentorId）
+            if (projectForm.getMentorId() != null && !projectForm.getMentorId().isEmpty()) {
+                projectEntity.setMentorId(projectForm.getMentorId());
+                // 查询教师姓名作为冗余字段
+                TeacherEntity teacher = teacherMapper.selectById(projectForm.getMentorId());
+                if (teacher != null) {
+                    projectEntity.setMentorName(teacher.getName());
+                }
+            } else if (projectForm.getMentorName() != null && !projectForm.getMentorName().isEmpty()) {
+                // 兼容旧版本，如果只传了mentorName
+                projectEntity.setMentorName(projectForm.getMentorName());
+            }
+            
             projectEntity.setTeamSize(projectForm.getTeamSize() != null ? Integer.parseInt(projectForm.getTeamSize()) : null);
             projectEntity.setDescription(projectForm.getDescription());
             projectEntity.setNeeds(projectForm.getNeeds());
             projectEntity.setUpdateTime(com.gxcj.utils.EntityHelper.now());
             
             projectMapper.updateById(projectEntity);
+            
+            // 返回更新的项目ID
+            return projectEntity.getProjectId();
         }
     }
 

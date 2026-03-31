@@ -10,6 +10,7 @@ import java.sql.Timestamp;
 public class ProjectCommentEntity {
     private String id;
     private String projectId;
+    private String stageId;
     private String teacherId;
     private String content;
     private Timestamp createTime;

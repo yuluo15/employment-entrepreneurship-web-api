@@ -56,21 +56,26 @@ public class TeacherProjectServiceImpl implements TeacherProjectService {
                 .eq(DictDataEntity::getDictType, DictTypeEnum.sys_project_domain));
         Map<String, String> map = list.stream().collect(Collectors.toMap(DictDataEntity::getDictValue, DictDataEntity::getDictLabel, (x, y) -> x));
 
-        // 获取教师所在学校ID
+        // 获取教师信息
         TeacherEntity teacher = teacherMapper.selectOne(new LambdaQueryWrapper<TeacherEntity>()
                 .eq(TeacherEntity::getUserId, userId));
         String teacherSchoolId = teacher != null ? teacher.getSchoolId() : null;
+        String teacherId = teacher != null ? teacher.getTeacherId() : null;
 
         LambdaQueryWrapper<ProjectEntity> wrapper = new LambdaQueryWrapper<>();
 
-        // 范围筛选：all=全网项目，school=本校项目
-        if ("school".equals(query.getScope()) && StringUtils.hasText(teacherSchoolId)) {
+        // 范围筛选：my=我的项目，school=本校项目，all=全网项目
+        if ("my".equals(query.getScope()) && StringUtils.hasText(teacherId)) {
+            // 只查询自己指导的项目
+            wrapper.eq(ProjectEntity::getMentorId, teacherId);
+        } else if ("school".equals(query.getScope()) && StringUtils.hasText(teacherSchoolId)) {
+            // 本校项目
+            wrapper.eq(ProjectEntity::getSchoolId, teacherSchoolId);
+        } else if (!StringUtils.hasText(query.getScope()) && StringUtils.hasText(teacherSchoolId)) {
+            // 默认为school
             wrapper.eq(ProjectEntity::getSchoolId, teacherSchoolId);
         }
-        // 默认为school，如果没有指定scope或scope为空，也按本校筛选
-        if (!StringUtils.hasText(query.getScope()) && StringUtils.hasText(teacherSchoolId)) {
-            wrapper.eq(ProjectEntity::getSchoolId, teacherSchoolId);
-        }
+        // all 不添加任何范围限制
 
         // 关键词搜索（项目名称或学生姓名）
         if (StringUtils.hasText(query.getKeyword())) {
@@ -177,10 +182,27 @@ public class TeacherProjectServiceImpl implements TeacherProjectService {
 
     @Override
     public TeacherProjectDetailVo getProjectDetail(String projectId) {
+        String userId = UserContext.getUserId();
+        
+        // 获取当前教师信息
+        TeacherEntity currentTeacher = teacherMapper.selectOne(new LambdaQueryWrapper<TeacherEntity>()
+                .eq(TeacherEntity::getUserId, userId));
+        
         // 查询项目基本信息
         ProjectEntity project = projectMapper.selectById(projectId);
         if (project == null) {
             throw new BusinessException("项目不存在");
+        }
+
+        // 验证权限：只能查看自己指导的项目或本校项目
+        boolean isMentor = false;
+        if (currentTeacher != null) {
+            isMentor = currentTeacher.getTeacherId().equals(project.getMentorId());
+            boolean isSchoolProject = currentTeacher.getSchoolId().equals(project.getSchoolId());
+            
+            if (!isMentor && !isSchoolProject) {
+                throw new BusinessException("无权查看该项目");
+            }
         }
 
         // 查询学生信息（通过userId）
@@ -210,6 +232,7 @@ public class TeacherProjectServiceImpl implements TeacherProjectService {
         vo.setDomain(project.getDomain());
         vo.setTeamSize(project.getTeamSize());
         vo.setStatus(project.getStatus());
+        vo.setIsMentor(isMentor); // 设置是否是指导教师
 
         if (student != null) {
             vo.setStudentId(student.getStudentId());

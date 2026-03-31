@@ -1,18 +1,13 @@
 package com.gxcj.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.gxcj.entity.CompanyEntity;
-import com.gxcj.entity.JobEntity;
-import com.gxcj.entity.StudentEntity;
-import com.gxcj.entity.StudentResumeEntity;
+import com.gxcj.entity.*;
 import com.gxcj.entity.vo.JobRecommendationVo;
 import com.gxcj.entity.vo.ResumeMatchVo;
 import com.gxcj.exception.BusinessException;
-import com.gxcj.mapper.CompanyMapper;
-import com.gxcj.mapper.JobMapper;
-import com.gxcj.mapper.StudentMapper;
-import com.gxcj.mapper.StudentResumeMapper;
+import com.gxcj.mapper.*;
 import com.gxcj.service.AIRecommendationService;
+import com.gxcj.stutas.DictTypeEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingResponse;
@@ -48,6 +43,8 @@ public class AIRecommendationServiceImpl implements AIRecommendationService {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private DictDataMapper dictDataMapper;
 
     @Override
     public List<JobRecommendationVo> recommendJobs(String studentId, int limit) {
@@ -423,6 +420,9 @@ public class AIRecommendationServiceImpl implements AIRecommendationService {
         // 计算匹配度
         int matchScore = (int) (similarity * 100);
 
+        Map<String, String> map = dictDataMapper.selectList(new LambdaQueryWrapper<DictDataEntity>()
+                .eq(DictDataEntity::getDictType, DictTypeEnum.sys_education.name())).stream().collect(Collectors.toMap(DictDataEntity::getDictValue, DictDataEntity::getDictLabel, (x, y) -> x));
+
         // 获取学生基本信息
         StudentEntity student = studentMapper.selectById(studentId);
 
@@ -435,7 +435,7 @@ public class AIRecommendationServiceImpl implements AIRecommendationService {
                 .studentName(student != null ? student.getStudentName() : "")
                 .school(student != null ? student.getCollegeName() : "")
                 .major(student != null ? student.getMajorName() : "")
-                .education(student != null ? student.getEducation() : "")
+                .education(student != null ? map.get(student.getEducation()) : "")
                 .graduationYear(student != null ? student.getGraduationYear() : null)
                 .expectedPosition(expectedPosition)
                 .expectedSalary(expectedSalary)

@@ -22,4 +22,5 @@ public class TeacherProjectDetailVo {
     private String status;
     private List<String> tags;
     private String createTime;
+    private Boolean isMentor; // 当前登录教师是否是该项目的指导教师
 }

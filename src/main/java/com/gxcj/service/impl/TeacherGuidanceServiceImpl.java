@@ -46,6 +46,9 @@ public class TeacherGuidanceServiceImpl implements TeacherGuidanceService {
     @Autowired
     private UserMapper userMapper;
 
+    @Autowired
+    private ProjectStageMapper projectStageMapper;
+
     @Override
     public TeacherGuidanceStatsVo getStats() {
         String userId = UserContext.getUserId();
@@ -188,6 +191,23 @@ public class TeacherGuidanceServiceImpl implements TeacherGuidanceService {
             throw new BusinessException("项目不存在");
         }
 
+        // 验证权限：只有指导教师才能发表指导意见
+        if (teacherEntity == null || !teacherEntity.getTeacherId().equals(project.getMentorId())) {
+            throw new BusinessException("您不是该项目的指导教师，无法发表指导意见");
+        }
+
+        // 如果指定了阶段，验证阶段状态
+        if (StringUtils.hasText(dto.getStageId())) {
+            ProjectStageEntity stage = projectStageMapper.selectById(dto.getStageId());
+            if (stage == null) {
+                throw new BusinessException("阶段不存在");
+            }
+            // 关键验证：只能对进行中（IN_PROGRESS）的阶段发表指导
+            if (!"IN_PROGRESS".equals(stage.getStatus())) {
+                throw new BusinessException("只能对进行中的阶段发表指导意见");
+            }
+        }
+
         // 验证指导内容长度
         if (!StringUtils.hasText(dto.getContent()) || dto.getContent().length() < 10) {
             throw new BusinessException("指导内容不能少于10个字");
@@ -197,6 +217,7 @@ public class TeacherGuidanceServiceImpl implements TeacherGuidanceService {
         ProjectCommentEntity comment = new ProjectCommentEntity();
         comment.setId(EntityHelper.uuid());
         comment.setProjectId(dto.getProjectId());
+        comment.setStageId(dto.getStageId());
         comment.setTeacherId(teacherEntity.getTeacherId());
         comment.setContent(dto.getContent());
         comment.setCreateTime(EntityHelper.now());

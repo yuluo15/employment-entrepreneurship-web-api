@@ -130,7 +130,7 @@ public class HomeServiceImpl implements HomeService {
     private Integer getPendingJobsCount() {
         Long count = jobMapper.selectCount(
                 new LambdaQueryWrapper<JobEntity>()
-                        .eq(JobEntity::getStatus, 0));  // 0=待审核
+                        .eq(JobEntity::getAudit, 0));  // 0=待审核
         return count != null ? count.intValue() : 0;
     }
 
